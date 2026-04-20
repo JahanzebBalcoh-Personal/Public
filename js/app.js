@@ -3,6 +3,21 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const storage = firebase.storage();
 
+function parseTimeToMinutes(timeStr) {
+    if (!timeStr) return 0;
+    const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+    if (!match) return 0;
+    let h = parseInt(match[1]);
+    const m = parseInt(match[2] || 0);
+    const ap = (match[3] || '').toUpperCase();
+    if (ap === 'PM' && h < 12) h += 12;
+    if (ap === 'AM' && h === 12) h = 0;
+    // For manual input without AM/PM, assume PM if < 8
+    if (!ap && h < 8) h += 12;
+    return h * 60 + m;
+}
+
+
 let allBookings = [];
 let selectedSlot = null;
 let RATE = 2000; // Default
@@ -129,10 +144,19 @@ function checkManualTime() {
     const ampm = h >= 12 ? 'PM' : 'AM';
     h = h % 12 || 12;
     const formatted = `${h.toString().padStart(2, '0')}:${m} ${ampm}`;
+    const newStart = parseTimeToMinutes(formatted);
+    const newEnd = newStart + 60; // Assume at least 1 hr for check
 
-    const isBkd = allBookings.some(b => b.st === formatted && b.status !== 'cancelled');
+    const isBkd = allBookings.some(b => {
+        if (b.status === 'cancelled') return false;
+        const bStart = parseTimeToMinutes(b.st);
+        const bEnd = bStart + (parseFloat(b.hrs || 1) * 60);
+        return (newStart < bEnd && newEnd > bStart);
+    });
+
     if (isBkd) {
-        toast(`Slot ${formatted} is already BOOKED! ❌`, 'err');
+        toast(`Slot ${formatted} or part of it is already BOOKED! ❌`, 'err');
+
     } else {
         selectedSlot = formatted;
         renderSlots();
@@ -156,10 +180,20 @@ function renderSlots() {
     times.push("12:00 AM", "01:00 AM", "02:00 AM", "03:00 AM");
 
     times.forEach(t => {
-        const isBkd = allBookings.some(b => b.st === t && b.status !== 'cancelled');
+        const newStart = parseTimeToMinutes(t);
+        const newEnd = newStart + 60; 
+        
+        const isBkd = allBookings.some(b => {
+            if (b.status === 'cancelled') return false;
+            const bStart = parseTimeToMinutes(b.st);
+            const bEnd = bStart + (parseFloat(b.hrs || 1) * 60);
+            return (newStart < bEnd && newEnd > bStart);
+        });
+
         const div = document.createElement('div');
         div.className = `slot ${isBkd ? 'bkd' : 'free'} ${selectedSlot === t ? 'selected' : ''}`;
         div.innerHTML = `<div class="slot-time">${t}</div><div style="font-size:9px;">${isBkd ? 'Booked' : 'Available'}</div>`;
+
         
         if(!isBkd) {
             div.onclick = () => {
@@ -185,6 +219,7 @@ async function submitBooking() {
     const trid = document.getElementById('payTrid').value.trim();
     const date = document.getElementById('matchDate').value;
     const file = document.getElementById('payScreenshot').files[0];
+    const hrs = document.getElementById('matchHrs').value;
     const submitBtn = document.getElementById('submitBtn');
 
     if(!nm || !ph || !selectedSlot) {
@@ -200,19 +235,29 @@ async function submitBooking() {
     submitBtn.disabled = true;
     submitBtn.textContent = "Checking availability...";
 
-    // Re-check availability right before submitting
+    // Re-check availability right before submitting (Overlap aware)
     const checkSnap = await db.collection('bookings')
         .where('date', '==', date)
-        .where('st', '==', selectedSlot)
         .get();
     
-    const activeBookings = checkSnap.docs.filter(d => d.data().status !== 'cancelled');
+    const newStart = parseTimeToMinutes(selectedSlot);
+    const newEnd = newStart + (parseFloat(hrs) * 60);
+
+    const activeBookings = checkSnap.docs.filter(d => {
+        const b = d.data();
+        if (b.status === 'cancelled') return false;
+        const bStart = parseTimeToMinutes(b.st);
+        const bEnd = bStart + (parseFloat(b.hrs || 1) * 60);
+        return (newStart < bEnd && newEnd > bStart);
+    });
+
     if (activeBookings.length > 0) {
-        toast('Sorry, this slot was just BOOKED by someone else! ❌', 'err');
+        toast('Sorry, this slot or time range was just BOOKED! ❌', 'err');
         submitBtn.disabled = false;
         submitBtn.textContent = "CONFIRM BOOKING ✅";
         return;
     }
+
 
     submitBtn.textContent = "Processing...";
 
@@ -230,8 +275,9 @@ async function submitBooking() {
     const booking = {
         nm, ph, trid, date, 
         st: selectedSlot,
-        hrs,
+        hrs: parseFloat(hrs),
         status: 'pending', // Staff will verify
+
         source: 'online_web',
         advAmt: 500,
         createdAt: new Date().toISOString(),
