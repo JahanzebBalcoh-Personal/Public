@@ -75,15 +75,25 @@ function renderBookingsList() {
 
     list.innerHTML = `<div style="font-size:12px; margin-bottom:15px; opacity:0.6;">Showing matches for: ${date}</div>` + 
     allBookings.map(b => `
-        <div style="background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:15px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-            <div>
-                <div style="font-weight:800; color:var(--gold);">${b.st} (${b.hrs} hrs)</div>
-                <div style="font-size:12px; opacity:0.8;">${b.nm} - ${b.ph}</div>
+        <div style="background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:15px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
+                <div>
+                    <div style="font-weight:800; color:var(--gold); font-size:16px;">${b.st} (${b.hrs} hrs)</div>
+                    <div style="font-size:13px; font-weight:700;">${b.nm}</div>
+                    <div style="font-size:11px; opacity:0.7;">${b.ph}</div>
+                </div>
+                <div style="text-align:right;">
+                    <span style="background:${getStatusColor(b.status)}; color:#000; padding:4px 10px; border-radius:20px; font-size:10px; font-weight:900; text-transform:uppercase;">${b.status}</span>
+                    <div style="margin-top:5px;">
+                        ${b.status === 'pending' ? `<button onclick="approveBooking('${b.id}')" style="background:var(--gold); border:none; padding:5px 10px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; color:#000;">Approve Now</button>` : ''}
+                    </div>
+                </div>
             </div>
-            <div style="text-align:right;">
-                <div style="font-size:10px; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Status</div>
-                <span style="background:${getStatusColor(b.status)}; color:#000; padding:4px 10px; border-radius:20px; font-size:10px; font-weight:900; text-transform:uppercase;">${b.status}</span>
-                ${b.status === 'pending' ? `<button onclick="approveBooking('${b.id}')" style="margin-left:10px; background:var(--gold); border:none; padding:4px 8px; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer;">Approve</button>` : ''}
+            <div style="display:flex; gap:15px; border-top:1px solid rgba(255,255,255,0.05); padding-top:10px; font-size:11px;">
+                <div>Total: <b style="color:var(--text);">Rs. ${b.totalAmt || 0}</b></div>
+                <div>Paid: <b style="color:var(--green);">Rs. ${b.advAmt || 0}</b></div>
+                <div>Due: <b style="color:#ef4444;">Rs. ${b.due || 0}</b></div>
+                ${b.trid ? `<div style="opacity:0.6;">TRID: ${b.trid}</div>` : ''}
             </div>
         </div>
     `).join('');
