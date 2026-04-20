@@ -42,19 +42,25 @@ async function fetchSettings() {
     }
 }
 
+let unsubscribe = null;
+
 async function loadSlots() {
     const date = document.getElementById('matchDate').value;
     const grid = document.getElementById('slotGrid');
     grid.innerHTML = '<div class="loading-slots">Checking available slots...</div>';
 
-    try {
-        const snapshot = await db.collection('bookings').where('date', '==', date).get();
-        allBookings = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
-        renderSlots();
-        renderBookingsList();
-    } catch(e) {
-        grid.innerHTML = '<div class="loading-slots">Error loading slots. Try again.</div>';
-    }
+    // Unsubscribe from previous date listener
+    if (unsubscribe) unsubscribe();
+
+    unsubscribe = db.collection('bookings').where('date', '==', date)
+        .onSnapshot((snapshot) => {
+            allBookings = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+            renderSlots();
+            renderBookingsList();
+        }, (e) => {
+            console.error("Sync Error:", e);
+            grid.innerHTML = '<div class="loading-slots">Error syncing slots.</div>';
+        });
 }
 
 function renderBookingsList() {
@@ -182,6 +188,22 @@ async function submitBooking() {
     }
 
     submitBtn.disabled = true;
+    submitBtn.textContent = "Checking availability...";
+
+    // Re-check availability right before submitting
+    const checkSnap = await db.collection('bookings')
+        .where('date', '==', date)
+        .where('st', '==', selectedSlot)
+        .get();
+    
+    const activeBookings = checkSnap.docs.filter(d => d.data().status !== 'cancelled');
+    if (activeBookings.length > 0) {
+        toast('Sorry, this slot was just BOOKED by someone else! ❌', 'err');
+        submitBtn.disabled = false;
+        submitBtn.textContent = "CONFIRM BOOKING ✅";
+        return;
+    }
+
     submitBtn.textContent = "Processing...";
 
     let screenshotUrl = "";
