@@ -276,7 +276,8 @@ async function submitBooking() {
         nm, ph, trid, date, 
         st: selectedSlot,
         hrs: parseFloat(hrs),
-        status: 'pending', // Staff will verify
+        status: 'waiting_approval', // Staff will verify
+
 
         source: 'online_web',
         advAmt: 500,
