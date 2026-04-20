@@ -1,0 +1,15 @@
+{
+  "name": "The Sultans Indoor Cricket Club",
+  "short_name": "Sultans Club",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#060e1a",
+  "theme_color": "#f0b429",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/5351/5351475.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

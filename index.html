@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Sultans | Indoor Cricket Club Multan</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
 <style>
 :root {
     --gold: #f0b429;
@@ -92,6 +93,7 @@ body {
 </style>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 </head>
 <body>
 
@@ -99,8 +101,8 @@ body {
 <div class="hero">
     <div class="overlay"></div>
     <div class="hero-content">
-        <div class="logo">🏏</div>
-        <h1 class="bn">THE SULTANS</h1>
+        <div class="logo">🏏🏏</div>
+        <h1 class="bn">THE SULTANS CLUB</h1>
         <p class="tagline">Premium Indoor Cricket Facility in Multan</p>
         <div class="hero-btns">
             <button class="btn-main" onclick="scrollToBooking()">BOOK YOUR SLOT NOW</button>
@@ -143,10 +145,21 @@ body {
                 <label>Duration (Hours)</label>
                 <select id="matchHrs" onchange="calcPrice()">
                     <option value="1">1 Hour</option>
+                    <option value="1.5">1.5 Hours</option>
                     <option value="2" selected>2 Hours</option>
                     <option value="2.5">2.5 Hours</option>
                     <option value="3">3 Hours</option>
                 </select>
+            </div>
+        </div>
+
+        <div id="manualTimeBox" style="margin-bottom: 20px;">
+            <div class="fl">
+                <label>Manual Time Entry (Optional)</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="time" id="manualTime" style="flex: 1;">
+                    <button class="btn-main" style="padding: 10px 20px; font-size: 12px;" onclick="checkManualTime()">Check</button>
+                </div>
             </div>
         </div>
 
@@ -191,13 +204,26 @@ body {
                 </div>
             </div>
 
+            <div class="fl" style="margin-bottom: 15px;">
+                <label>Upload Payment Screenshot</label>
+                <input type="file" id="payScreenshot" accept="image/*" style="padding: 8px;">
+            </div>
+
             <div class="fl trid-box">
                 <label>Transaction ID (TRID)</label>
                 <input type="text" id="payTrid" placeholder="Enter 11-digit ID...">
-                <p class="trid-hint">ID enter karte hi hamara staff verify kar ke confirm kar dega.</p>
+                <p class="trid-hint">ID or Screenshot enter karte hi hamara staff verify kar ke confirm kar dega.</p>
             </div>
 
-            <button class="btn-gold" onclick="submitBooking()">CONFIRM BOOKING ✅</button>
+            <button class="btn-gold" id="submitBtn" onclick="submitBooking()">CONFIRM BOOKING ✅</button>
+        </div>
+    </div>
+
+    <!-- BOOKINGS LIST SECTION -->
+    <div class="card" style="margin-top: 40px;">
+        <div class="step-title">Today's Scheduled Matches</div>
+        <div id="bookingsList" style="margin-top: 20px;">
+            <div class="loading-slots">Loading bookings...</div>
         </div>
     </div>
 </div>
