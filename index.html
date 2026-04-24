@@ -216,11 +216,19 @@ body {
 
             <div class="price-box">
                 <div class="p-row"><span>Slot Price:</span><span id="priceVal">Rs. 0</span></div>
-                <div class="p-row highlight"><span>Minimum Advance:</span><span>Rs. 500</span></div>
+                <div class="fl" style="margin-top:10px;">
+                    <label style="color:var(--green);">SELECT ADVANCE TO PAY</label>
+                    <select id="advAmount" style="background:var(--card2); border:1.5px solid var(--green); border-radius:10px; padding:10px; color:#fff; font-weight:900; font-size:16px;" onchange="updatePayInstr()">
+                        <option value="500">Rs. 500 (Minimum)</option>
+                        <option value="1000">Rs. 1,000</option>
+                        <option value="1500">Rs. 1,500</option>
+                        <option value="2000">Rs. 2,000</option>
+                    </select>
+                </div>
             </div>
 
             <div class="step-title">3. Secure Booking (Advance)</div>
-            <p class="pay-instr">To confirm your slot, please send <b>Rs. 500</b> advance to any account below and enter the Transaction ID.</p>
+            <p class="pay-instr">To confirm your slot, please send <b id="payInstrAmt" style="color:var(--gold); font-size:18px;">Rs. 500</b> advance to any account below and enter the Transaction ID.</p>
             
             <div class="pay-methods">
                 <div class="pay-card jazz">

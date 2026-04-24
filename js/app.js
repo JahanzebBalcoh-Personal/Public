@@ -209,6 +209,7 @@ async function submitBooking() {
     const date = document.getElementById('matchDate').value;
     const file = document.getElementById('payScreenshot').files[0];
     const hrs = document.getElementById('matchHrs').value;
+    const advAmt = parseFloat(document.getElementById('advAmount').value) || 500;
     const submitBtn = document.getElementById('submitBtn');
 
     if(!nm || !ph || !selectedSlot) {
@@ -269,10 +270,10 @@ async function submitBooking() {
 
 
         source: 'online_web',
-        advAmt: 500,
+        advAmt: advAmt,
         createdAt: new Date().toISOString(),
         totalAmt: parseFloat(hrs) * RATE,
-        due: (parseFloat(hrs) * RATE) - 500,
+        due: (parseFloat(hrs) * RATE) - advAmt,
         nt: 'Online Booking - TRID: ' + trid,
         screenshot: screenshotUrl
     };
@@ -323,6 +324,12 @@ function toast(msg, type) {
 
 function scrollToBooking() {
     document.getElementById('booking').scrollIntoView({ behavior: 'smooth' });
+}
+
+function updatePayInstr() {
+    const amt = document.getElementById('advAmount').value;
+    const el = document.getElementById('payInstrAmt');
+    if (el) el.textContent = `Rs. ${parseInt(amt).toLocaleString()}`;
 }
 
 // Hide loading overlay
