@@ -98,10 +98,7 @@ function renderBookingsList() {
                     <div style="font-size:11px; opacity:0.7;">${b.ph}</div>
                 </div>
                 <div style="text-align:right;">
-                    <span style="background:${getStatusColor(b.status)}; color:#000; padding:4px 10px; border-radius:20px; font-size:10px; font-weight:900; text-transform:uppercase;">${b.status}</span>
-                    <div style="margin-top:5px;">
-                        ${b.status === 'pending' ? `<button onclick="approveBooking('${b.id}')" style="background:var(--gold); border:none; padding:5px 10px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; color:#000;">Approve Now</button>` : ''}
-                    </div>
+                    <span style="background:${getStatusColor(b.status)}; color:#000; padding:4px 10px; border-radius:20px; font-size:10px; font-weight:900; text-transform:uppercase;">${b.status.replace('_', ' ')}</span>
                 </div>
             </div>
             <div style="display:flex; gap:15px; border-top:1px solid rgba(255,255,255,0.05); padding-top:10px; font-size:11px;">
@@ -292,18 +289,29 @@ async function submitBooking() {
         });
 
         toast('Booking Submitted! Staff will contact you shortly. ✅', 'ok');
-        setTimeout(() => {
-            window.location.reload();
-        }, 3000);
+        document.getElementById('successOverlay').style.display = 'flex';
+        // setTimeout(() => {
+        //     window.location.reload();
+        // }, 3000);
 
     } catch(e) {
         toast('Error: ' + e.message, 'err');
     }
 }
 
-function toast(msg, type) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
+async function triggerAlarm() {
+    try {
+        const nm = document.getElementById('custName').value.trim() || 'A Customer';
+        await db.collection('alerts').add({
+            txt: `🚨 Emergency: ${nm} needs attention at the desk!`,
+            at: new Date().toISOString()
+        });
+        toast('Staff alerted! 🔔', 'ok');
+    } catch(e) {
+        console.error("Alarm failed:", e);
+        toast('Failed to alert staff.', 'err');
+    }
+}
     t.style.background = type === 'err' ? '#ef4444' : (type === 'info' ? '#3b82f6' : '#22c55e');
     t.classList.add('on');
     setTimeout(() => t.classList.remove('on'), 4000);
