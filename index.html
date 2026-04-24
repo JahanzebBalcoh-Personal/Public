@@ -6,6 +6,19 @@
     <title>The Sultans | Indoor Cricket Club Multan</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
+<script>
+    window.addEventListener('error', function(e) {
+      console.error('Global Error:', e);
+      const errBox = document.getElementById('globalErr');
+      if (errBox) {
+        errBox.style.display = 'block';
+        errBox.textContent = '⚠️ Error: ' + e.message;
+      }
+      // Hide loader on error
+      const loader = document.getElementById('loadingOverlay');
+      if (loader) loader.style.display = 'none';
+    });
+</script>
 <style>
 :root {
     --gold: #f0b429;
@@ -96,6 +109,7 @@ body {
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 </head>
 <body>
+<div id="globalErr" style="position:fixed;top:0;left:0;width:100%;background:#ef4444;color:#fff;font-size:12px;font-weight:bold;padding:10px;z-index:10001;display:none;text-align:center;"></div>
 <div id="loadingOverlay" style="position:fixed;inset:0;background:var(--bg);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s;">
   <div class="logo" style="font-size:60px;margin-bottom:20px;">🏏</div>
   <div class="bn" style="font-size:32px;color:var(--gold);">THE SULTANS CLUB</div>
