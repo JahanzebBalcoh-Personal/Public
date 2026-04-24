@@ -1,6 +1,8 @@
 {
   "name": "The Sultans Indoor Cricket Club",
   "short_name": "Sultans Club",
+  "description": "Book your indoor cricket slots at The Sultans, Multan. Premium facility with live scoring.",
+  "id": "com.sultans.public",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#060e1a",
@@ -11,5 +13,10 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "categories": ["sports", "entertainment"],
+  "orientation": "portrait",
+  "scope": "./",
+  "lang": "en-PK",
+  "dir": "ltr"
 }

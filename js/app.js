@@ -312,6 +312,10 @@ async function triggerAlarm() {
         toast('Failed to alert staff.', 'err');
     }
 }
+function toast(msg, type) {
+    const t = document.getElementById('toast');
+    if (!t) return;
+    t.textContent = msg;
     t.style.background = type === 'err' ? '#ef4444' : (type === 'info' ? '#3b82f6' : '#22c55e');
     t.classList.add('on');
     setTimeout(() => t.classList.remove('on'), 4000);
@@ -320,3 +324,14 @@ async function triggerAlarm() {
 function scrollToBooking() {
     document.getElementById('booking').scrollIntoView({ behavior: 'smooth' });
 }
+
+// Hide loading overlay
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        const loader = document.getElementById('loadingOverlay');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 500);
+        }
+    }, 800);
+});
