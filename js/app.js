@@ -3,6 +3,9 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const storage = firebase.storage();
 
+// Enable Persistence for Speed
+db.enablePersistence().catch(err => console.warn("Persistence failed:", err.code));
+
 function parseTimeToMinutes(timeStr) {
     if (!timeStr) return 0;
     const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
@@ -340,5 +343,5 @@ window.addEventListener('load', () => {
             loader.style.opacity = '0';
             setTimeout(() => loader.style.display = 'none', 500);
         }
-    }, 800);
+    }, 300);
 });
