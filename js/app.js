@@ -132,18 +132,11 @@ async function approveBooking(id) {
 }
 
 function checkManualTime() {
-    const timeVal = document.getElementById('manualTime').value;
-    if (!timeVal) {
-        toast('Please enter a time first!', 'err');
-        return;
-    }
+    const h = document.getElementById('manualHour').value;
+    const m = document.getElementById('manualMin').value;
+    const ampm = document.getElementById('manualAMPM').value;
 
-    // Convert 24h to 12h format
-    let [h, m] = timeVal.split(':');
-    h = parseInt(h);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    h = h % 12 || 12;
-    const formatted = `${h.toString().padStart(2, '0')}:${m} ${ampm}`;
+    const formatted = `${h}:${m} ${ampm}`;
     const newStart = parseTimeToMinutes(formatted);
     const newEnd = newStart + 60; // Assume at least 1 hr for check
 
@@ -170,14 +163,13 @@ function renderSlots() {
     const grid = document.getElementById('slotGrid');
     grid.innerHTML = '';
     
-    // Define slots from 7 AM to 3 AM (next day)
+    // Define slots for all 24 hours
     const times = [];
-    for(let i=7; i<=23; i++) {
-        let h = i > 12 ? i - 12 : i;
+    for(let i=0; i<24; i++) {
+        let h = i % 12 || 12;
         let ampm = i >= 12 ? 'PM' : 'AM';
         times.push(`${h.toString().padStart(2, '0')}:00 ${ampm}`);
     }
-    times.push("12:00 AM", "01:00 AM", "02:00 AM", "03:00 AM");
 
     times.forEach(t => {
         const newStart = parseTimeToMinutes(t);

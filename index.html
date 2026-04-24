@@ -156,9 +156,23 @@ body {
         <div id="manualTimeBox" style="margin-bottom: 20px;">
             <div class="fl">
                 <label>Manual Time Entry (Optional)</label>
-                <div style="display: flex; gap: 10px;">
-                    <input type="time" id="manualTime" style="flex: 1;">
-                    <button class="btn-main" style="padding: 10px 20px; font-size: 12px;" onclick="checkManualTime()">Check</button>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div style="display: flex; gap: 5px; flex: 1;">
+                        <select id="manualHour" style="flex: 1; background: var(--card2); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px; color: var(--text); outline: none;">
+                            <option value="01">01</option><option value="02">02</option><option value="03">03</option>
+                            <option value="04">04</option><option value="05">05</option><option value="06" selected>06</option>
+                            <option value="07">07</option><option value="08">08</option><option value="09">09</option>
+                            <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                        </select>
+                        <select id="manualMin" style="width: 80px; background: var(--card2); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px; color: var(--text); outline: none;">
+                            <option value="00">:00</option><option value="15">:15</option>
+                            <option value="30">:30</option><option value="45">:45</option>
+                        </select>
+                        <select id="manualAMPM" style="width: 80px; background: var(--card2); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px; color: var(--gold); font-weight: 900; outline: none;">
+                            <option value="AM">AM</option><option value="PM" selected>PM</option>
+                        </select>
+                    </div>
+                    <button class="btn-main" style="padding: 14px 25px; font-size: 14px;" onclick="checkManualTime()">Check</button>
                 </div>
             </div>
         </div>
