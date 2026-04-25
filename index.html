@@ -130,29 +130,57 @@ body {
     </div>
 </div>
 
-<!-- FEATURES -->
-<div class="section stats-strip">
-    <div class="stat-item">
-        <span class="stat-icon">🏟️</span>
-        <div class="stat-txt">Professional Pitch</div>
+<!-- PREMIUM FEATURES -->
+<div class="section" style="padding-top: 40px; padding-bottom: 40px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+        <div class="card" style="padding: 25px; text-align: center; background: linear-gradient(135deg, var(--card), var(--card2)); border: 1.5px solid var(--border);">
+            <span style="font-size: 40px; display: block; margin-bottom: 15px;">🏟️</span>
+            <h3 class="bn" style="font-size: 20px; color: var(--gold); margin-bottom: 8px;">Professional Pitch</h3>
+            <p style="font-size: 12px; color: var(--muted); font-weight: 700;">High-quality indoor turf for perfect bounce and grip.</p>
+        </div>
+        <div class="card" style="padding: 25px; text-align: center; background: linear-gradient(135deg, var(--card), var(--card2)); border: 1.5px solid var(--border);">
+            <span style="font-size: 40px; display: block; margin-bottom: 15px;">💡</span>
+            <h3 class="bn" style="font-size: 20px; color: var(--gold); margin-bottom: 8px;">Stadium Lighting</h3>
+            <p style="font-size: 12px; color: var(--muted); font-weight: 700;">Anti-glare LED lighting for crystal clear night visibility.</p>
+        </div>
+        <div class="card" style="padding: 25px; text-align: center; background: linear-gradient(135deg, var(--card), var(--card2)); border: 1.5px solid var(--border);">
+            <span style="font-size: 40px; display: block; margin-bottom: 15px;">🎯</span>
+            <h3 class="bn" style="font-size: 20px; color: var(--gold); margin-bottom: 8px;">Live Scoreboard</h3>
+            <p style="font-size: 12px; color: var(--muted); font-weight: 700;">Digital scoring system for every professional match.</p>
+        </div>
+        <div class="card" style="padding: 25px; text-align: center; background: linear-gradient(135deg, var(--card), var(--card2)); border: 1.5px solid var(--border);">
+            <span style="font-size: 40px; display: block; margin-bottom: 15px;">✅</span>
+            <h3 class="bn" style="font-size: 20px; color: var(--gold); margin-bottom: 8px;">Instant Booking</h3>
+            <p style="font-size: 12px; color: var(--muted); font-weight: 700;">Select your time, pay advance, and confirm instantly.</p>
+        </div>
     </div>
-    <div class="stat-item">
-        <span class="stat-icon">💡</span>
-        <div class="stat-txt">Stadium Lighting</div>
-    </div>
-    <div class="stat-item">
-        <span class="stat-icon">🥤</span>
-        <div class="stat-txt">Refreshments</div>
-    </div>
-    <div class="stat-item">
-        <span class="stat-icon">✅</span>
-        <div class="stat-txt">Secure Booking</div>
+</div>
+
+<!-- HOW TO PRE-BOOK -->
+<div class="section" id="pre-book-info" style="padding-top: 40px; padding-bottom: 40px;">
+    <h2 class="sh-t" style="font-size: 32px; margin-bottom: 30px;">How to Pre-Book</h2>
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 250px; background: rgba(240,180,41,0.05); border-radius: 20px; padding: 25px; border: 1px dashed var(--gold);">
+            <div style="font-family: 'Bebas Neue', sans-serif; font-size: 40px; color: rgba(240,180,41,0.2); margin-bottom: -20px;">01</div>
+            <h4 style="color: var(--gold); font-size: 18px; margin-bottom: 10px; font-weight: 800;">SELECT YOUR SLOT</h4>
+            <p style="font-size: 13px; color: var(--soft); font-weight: 600;">Choose your date, match duration, and starting time from the calendar.</p>
+        </div>
+        <div style="flex: 1; min-width: 250px; background: rgba(34,197,94,0.05); border-radius: 20px; padding: 25px; border: 1px dashed var(--green);">
+            <div style="font-family: 'Bebas Neue', sans-serif; font-size: 40px; color: rgba(34,197,94,0.2); margin-bottom: -20px;">02</div>
+            <h4 style="color: var(--green); font-size: 18px; margin-bottom: 10px; font-weight: 800;">PAY ADVANCE</h4>
+            <p style="font-size: 13px; color: var(--soft); font-weight: 600;">Send advance payment (Rs.500 - 2000) to our official accounts via JazzCash or Bank.</p>
+        </div>
+        <div style="flex: 1; min-width: 250px; background: rgba(59,130,246,0.05); border-radius: 20px; padding: 25px; border: 1px dashed var(--blue);">
+            <div style="font-family: 'Bebas Neue', sans-serif; font-size: 40px; color: rgba(59,130,246,0.2); margin-bottom: -20px;">03</div>
+            <h4 style="color: var(--blue); font-size: 18px; margin-bottom: 10px; font-weight: 800;">UPLOAD & CONFIRM</h4>
+            <p style="font-size: 13px; color: var(--soft); font-weight: 600;">Enter Transaction ID and upload the receipt screenshot. Staff will approve instantly.</p>
+        </div>
     </div>
 </div>
 
 <!-- BOOKING SECTION -->
-<div class="section booking-container" id="booking">
-    <h2 class="sh-t">Reserve Your Match</h2>
+<div class="section booking-container" id="booking" style="padding-top: 60px;">
+    <h2 class="sh-t">Pre-Book Your Match</h2>
     <div class="card">
         <div class="step-title">1. Select Date & Time</div>
         <div class="frow">
@@ -261,9 +289,12 @@ body {
     </div>
 
     <!-- BOOKINGS LIST SECTION -->
-    <div class="card" style="margin-top: 40px;">
-        <div class="step-title">Today's Scheduled Matches</div>
-        <div id="bookingsList" style="margin-top: 20px;">
+    <div class="card" style="margin-top: 40px; background: linear-gradient(135deg, #0f172a, #1e293b); border: 2px solid var(--border); overflow: hidden; padding: 0;">
+        <div style="background: linear-gradient(90deg, var(--gold), var(--gold2)); color: #000; padding: 15px 25px; font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; display: flex; justify-content: space-between; align-items: center;">
+            <span>🏟️ TODAY'S MATCH SCHEDULE</span>
+            <span style="font-size: 12px; font-family: 'Nunito', sans-serif; font-weight: 900;" id="liveDateDisplay"></span>
+        </div>
+        <div id="bookingsList" style="padding: 20px;">
             <div class="loading-slots">Loading bookings...</div>
         </div>
     </div>

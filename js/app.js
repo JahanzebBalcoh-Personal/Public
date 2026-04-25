@@ -73,6 +73,13 @@ async function loadSlots() {
     unsubscribe = db.collection('bookings').where('date', '==', date)
         .onSnapshot((snapshot) => {
             allBookings = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+            // Update live date display
+            const liveDate = document.getElementById('liveDateDisplay');
+            if(liveDate) {
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                const dObj = new Date(date);
+                liveDate.textContent = dObj.toLocaleDateString('en-PK', options);
+            }
             renderSlots();
             renderBookingsList();
         }, (e) => {
@@ -91,33 +98,31 @@ function renderBookingsList() {
         return;
     }
 
-    list.innerHTML = `<div style="font-size:12px; margin-bottom:15px; opacity:0.6;">Showing matches for: ${date}</div>` + 
-    allBookings.map(b => `
-        <div style="background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:15px; margin-bottom:10px;">
-            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
-                <div>
-                    <div style="font-weight:800; color:var(--gold); font-size:16px;">${b.st} (${b.hrs} hrs)</div>
-                    <div style="font-size:13px; font-weight:700;">${b.nm}</div>
-                    <div style="font-size:11px; opacity:0.7;">${b.ph}</div>
-                </div>
-                <div style="text-align:right;">
-                    <span style="background:${getStatusColor(b.status)}; color:#000; padding:4px 10px; border-radius:20px; font-size:10px; font-weight:900; text-transform:uppercase;">${b.status.replace('_', ' ')}</span>
+    list.innerHTML = allBookings.map(b => `
+        <div style="background:rgba(255,255,255,0.02); border:1.5px solid var(--border); border-radius:16px; padding:20px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; transition:0.3s; border-left:5px solid ${getStatusColor(b.status)};">
+            <div style="flex:1;">
+                <div style="font-family:'Bebas Neue',sans-serif; font-size:24px; color:var(--text); letter-spacing:1px; line-height:1;">${b.st}</div>
+                <div style="font-size:11px; color:var(--muted); font-weight:800; margin-top:4px; text-transform:uppercase;">${b.hrs} HOURS MATCH</div>
+                <div style="margin-top:12px; display:flex; align-items:center; gap:10px;">
+                    <div style="width:30px; height:30px; background:var(--card2); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; border:1px solid var(--border);">🏏</div>
+                    <div>
+                        <div style="font-weight:900; font-size:15px; color:var(--gold);">${b.nm}</div>
+                        <div style="font-size:10px; color:var(--muted); font-weight:700;">PLAYER</div>
+                    </div>
                 </div>
             </div>
-            <div style="display:flex; gap:15px; border-top:1px solid rgba(255,255,255,0.05); padding-top:10px; font-size:11px;">
-                <div>Total: <b style="color:var(--text);">Rs. ${b.totalAmt || 0}</b></div>
-                <div>Paid: <b style="color:var(--green);">Rs. ${b.advAmt || 0}</b></div>
-                <div>Due: <b style="color:#ef4444;">Rs. ${b.due || 0}</b></div>
-                ${b.trid ? `<div style="opacity:0.6;">TRID: ${b.trid}</div>` : ''}
+            <div style="text-align:right;">
+                <div style="background:${getStatusColor(b.status)}; color:#000; padding:6px 15px; border-radius:30px; font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:1px; display:inline-block; margin-bottom:8px;">${b.status === 'waiting_approval' ? 'WAITING VERIFICATION' : b.status.toUpperCase()}</div>
+                <div style="font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--muted); font-weight:700;">REF: #${b.id.slice(-6).toUpperCase()}</div>
             </div>
         </div>
     `).join('');
 }
 
 function getStatusColor(s) {
-    if (s === 'approved') return '#22c55e';
-    if (s === 'pending') return '#f0b429';
-    return '#ef4444';
+    if (s === 'approved' || s === 'pre') return '#22c55e'; // Green
+    if (s === 'waiting_approval' || s === 'pending') return '#f0b429'; // Gold
+    return '#ef4444'; // Red
 }
 
 async function approveBooking(id) {
