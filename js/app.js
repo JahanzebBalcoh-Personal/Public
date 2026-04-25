@@ -292,6 +292,13 @@ async function submitBooking() {
             type: 'booking'
         });
 
+        // TRIGGER REAL-TIME SIREN/ALERT FOR STAFF
+        await db.collection('alerts').add({
+            txt: `🚨 NEW BOOKING: ${nm} @ ${selectedSlot}`,
+            at: new Date().toISOString(),
+            status: 'new'
+        });
+
         toast('Booking Submitted! Staff will contact you shortly. ✅', 'ok');
         document.getElementById('successOverlay').style.display = 'flex';
         // setTimeout(() => {
