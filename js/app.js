@@ -270,11 +270,33 @@ async function submitBooking() {
 
     let screenshotUrl = "";
     if (file) {
-        submitBtn.textContent = "Uploading Screenshot... Please Wait";
         try {
             const ref = storage.ref(`payments/${Date.now()}_${file.name}`);
-            const upload = await ref.put(file);
-            screenshotUrl = await upload.ref.getDownloadURL();
+            const uploadTask = ref.put(file);
+            
+            screenshotUrl = await new Promise((resolve, reject) => {
+                const timer = setTimeout(() => reject(new Error("Upload Timeout (Internet bohot slow hai)")), 30000);
+                
+                uploadTask.on('state_changed', 
+                    (snap) => {
+                        const progress = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+                        submitBtn.textContent = `Uploading Screenshot... ${progress}%`;
+                    }, 
+                    (error) => {
+                        clearTimeout(timer);
+                        reject(error);
+                    }, 
+                    async () => {
+                        clearTimeout(timer);
+                        try {
+                            const url = await uploadTask.snapshot.ref.getDownloadURL();
+                            resolve(url);
+                        } catch(e) {
+                            reject(e);
+                        }
+                    }
+                );
+            });
             console.log("Screenshot uploaded successfully:", screenshotUrl);
         } catch(e) {
             console.error("Upload failed:", e);
