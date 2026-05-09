@@ -307,14 +307,16 @@ async function submitBooking() {
         await db.collection('feed').add({
             txt: `New Online Booking from ${nm} for ${selectedSlot}`,
             at: new Date().toISOString(),
-            type: 'booking'
+            type: 'booking',
+            screenshot: screenshotUrl
         });
 
         // TRIGGER REAL-TIME SIREN/ALERT FOR STAFF
         await db.collection('alerts').add({
             txt: `🚨 NEW BOOKING: ${nm} @ ${selectedSlot}`,
             at: new Date().toISOString(),
-            status: 'new'
+            status: 'new',
+            screenshot: screenshotUrl
         });
 
         toast('Booking sent for approval! ✅', 'ok');
