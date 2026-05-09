@@ -1,7 +1,7 @@
 {
-  "name": "The Sultans Indoor Cricket Club",
-  "short_name": "Sultans Club",
-  "description": "Book your indoor cricket slots at The Sultans, Multan. Premium facility with live scoring.",
+  "name": "SCC Public",
+  "short_name": "SCC Public",
+  "description": "SCC Public booking portal for Sultans Indoor Cricket Club, Multan.",
   "id": "com.sultans.public",
   "start_url": "./index.html",
   "display": "standalone",
