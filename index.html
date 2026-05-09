@@ -7,15 +7,38 @@
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
 <script>
+    // NUCLEAR CACHE FIX — runs before anything else
+    if('serviceWorker' in navigator){
+      // Clear ALL caches immediately
+      if(window.caches){
+        caches.keys().then(function(names){
+          names.forEach(function(name){ caches.delete(name); });
+        });
+      }
+      // Force SW update check
+      navigator.serviceWorker.getRegistrations().then(function(regs){
+        regs.forEach(function(reg){ reg.update(); });
+      });
+      // Listen for reload command from new SW
+      navigator.serviceWorker.addEventListener('message', function(e){
+        if(e.data && e.data.type === 'force-reload'){
+          window.location.reload();
+        }
+      });
+      // Auto reload when new SW takes control
+      navigator.serviceWorker.addEventListener('controllerchange', function(){
+        window.location.reload();
+      });
+    }
+
     window.addEventListener('error', function(e) {
       console.error('Global Error:', e);
-      const errBox = document.getElementById('globalErr');
+      var errBox = document.getElementById('globalErr');
       if (errBox) {
         errBox.style.display = 'block';
         errBox.textContent = '⚠️ Error: ' + e.message;
       }
-      // Hide loader on error
-      const loader = document.getElementById('loadingOverlay');
+      var loader = document.getElementById('loadingOverlay');
       if (loader) loader.style.display = 'none';
     });
 </script>

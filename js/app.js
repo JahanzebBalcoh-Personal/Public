@@ -270,11 +270,19 @@ async function submitBooking() {
 
     let screenshotUrl = "";
     if (file) {
-        submitBtn.textContent = "Uploading Receipt (Please Wait)...";
+        submitBtn.textContent = "Uploading Screenshot... 0%";
         try {
             const ref = storage.ref(`payments/${Date.now()}_${file.name}`);
-            const upload = await ref.put(file);
-            screenshotUrl = await upload.ref.getDownloadURL();
+            const uploadTask = ref.put(file);
+            
+            // Listen to progress
+            uploadTask.on('state_changed', (snap) => {
+                const progress = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+                submitBtn.textContent = `Uploading Screenshot... ${progress}%`;
+            });
+            
+            await uploadTask;
+            screenshotUrl = await ref.getDownloadURL();
             console.log("Screenshot uploaded successfully:", screenshotUrl);
         } catch(e) {
             console.error("Upload failed:", e);
@@ -284,6 +292,8 @@ async function submitBooking() {
             return; // STOP HERE if user intended to upload but failed
         }
     }
+
+    submitBtn.textContent = "Saving Booking...";
 
     const booking = {
         nm, ph, trid: trid || 'N/A', date, 
@@ -300,7 +310,6 @@ async function submitBooking() {
     };
 
     try {
-        submitBtn.textContent = "Saving Booking...";
         await db.collection('bookings').add(booking);
         
         // Add to Feed/Activity for Admin
@@ -319,6 +328,9 @@ async function submitBooking() {
             screenshot: screenshotUrl
         });
 
+        submitBtn.textContent = "Waiting for Approval ⏳";
+        submitBtn.style.background = "var(--blue)";
+        submitBtn.style.color = "#fff";
         toast('Booking sent for approval! ✅', 'ok');
         document.getElementById('successOverlay').style.display = 'flex';
 

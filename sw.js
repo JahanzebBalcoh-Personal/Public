@@ -1,32 +1,30 @@
-const CACHE_NAME = 'sultans-public-v5';
-const ASSETS = [
-  './',
-  './index.html',
-  './css/style.css',
-  './js/app.js'
-];
+// SELF-DESTRUCT SERVICE WORKER
+// This SW clears ALL caches and forces page reload
+// After this, no caching will happen
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-  );
-  self.skipWaiting();
+self.addEventListener('install', function(e) {
+  self.skipWaiting(); // Activate immediately
 });
 
-self.addEventListener('activate', (e) => {
+self.addEventListener('activate', function(e) {
   e.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      );
+    // Delete ALL caches
+    caches.keys().then(function(names) {
+      return Promise.all(names.map(function(name) { return caches.delete(name); }));
+    }).then(function() {
+      return self.clients.claim(); // Take control
+    }).then(function() {
+      // Tell all open tabs to reload
+      return self.clients.matchAll().then(function(clients) {
+        clients.forEach(function(client) { 
+          client.postMessage({type: 'force-reload'}); 
+        });
+      });
     })
   );
 });
 
-self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then((res) => {
-      return res || fetch(e.request);
-    })
-  );
+// NEVER cache anything - always go to network
+self.addEventListener('fetch', function(e) {
+  e.respondWith(fetch(e.request));
 });
