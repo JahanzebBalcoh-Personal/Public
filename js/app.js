@@ -22,15 +22,16 @@ function parseTimeToMinutes(timeStr) {
 
 
 async function compressImage(file) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = (e) => {
             const img = new Image();
             img.src = e.target.result;
+            img.onerror = () => reject(new Error("Image Load Error"));
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 1000;
+                const MAX_WIDTH = 600; // Compact size for Firestore (1MB limit)
                 let width = img.width;
                 let height = img.height;
                 if (width > MAX_WIDTH) {
@@ -41,9 +42,11 @@ async function compressImage(file) {
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7);
+                // Return as Base64 Data URL (JPEG, 50% quality for small size)
+                resolve(canvas.toDataURL('image/jpeg', 0.5));
             };
         };
+        reader.onerror = () => reject(new Error("File Read Error"));
     });
 }
 
@@ -298,42 +301,14 @@ async function submitBooking() {
     if (file) {
         try {
             submitBtn.textContent = "Processing Image...";
-            const compressedBlob = await compressImage(file);
-            
-            const ref = storage.ref(`payments/${Date.now()}_screenshot.jpg`);
-            const uploadTask = ref.put(compressedBlob);
-            
-            screenshotUrl = await new Promise((resolve, reject) => {
-                const timer = setTimeout(() => reject(new Error("Upload Timeout (Connection bohot slow hai)")), 120000);
-                
-                uploadTask.on('state_changed', 
-                    (snap) => {
-                        const progress = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
-                        submitBtn.textContent = `Uploading Screenshot... ${progress}%`;
-                    }, 
-                    (error) => {
-                        clearTimeout(timer);
-                        reject(error);
-                    }, 
-                    async () => {
-                        clearTimeout(timer);
-                        try {
-                            const url = await uploadTask.snapshot.ref.getDownloadURL();
-                            resolve(url);
-                        } catch(e) {
-                            reject(e);
-                        }
-                    }
-                );
-            });
-            console.log("Screenshot uploaded successfully:", screenshotUrl);
+            screenshotUrl = await compressImage(file);
+            console.log("Image processed to Base64 (Size: " + Math.round(screenshotUrl.length/1024) + " KB)");
         } catch(e) {
-            console.error("Upload failed:", e);
-            alert("UPLOAD ERROR: " + e.message + " (Please check internet or contact developer)");
-            toast('Screenshot upload failed!', 'err');
+            console.error("Image error:", e);
+            alert("IMAGE ERROR: " + e.message);
             submitBtn.disabled = false;
             submitBtn.textContent = "CONFIRM BOOKING ✅";
-            return; // STOP HERE if user intended to upload but failed
+            return;
         }
     }
 
