@@ -1,4 +1,4 @@
-const firebaseConfig={apiKey:"AIzaSyBfhbjD0b8UaISn1QrK6E-Ci5Yr7HcUTzA",authDomain:"sultans-cricket.firebaseapp.com",projectId:"sultans-cricket",storageBucket:"sultans-cricket.firebasestorage.app",messagingSenderId:"975861366304",appId:"1:975861366304:web:6bfef2fc3e3b01d0284645"};
+const firebaseConfig={apiKey:"AIzaSyBfhbjD0b8UaISn1QrK6E-Ci5Yr7HcUTzA",authDomain:"sultans-cricket.firebaseapp.com",projectId:"sultans-cricket",storageBucket:"sultans-cricket.appspot.com",messagingSenderId:"975861366304",appId:"1:975861366304:web:6bfef2fc3e3b01d0284645"};
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const storage = firebase.storage();
@@ -300,7 +300,8 @@ async function submitBooking() {
             console.log("Screenshot uploaded successfully:", screenshotUrl);
         } catch(e) {
             console.error("Upload failed:", e);
-            toast('Screenshot upload failed! Please check your internet.', 'err');
+            alert("UPLOAD ERROR: " + e.message + " (Please check internet or contact developer)");
+            toast('Screenshot upload failed!', 'err');
             submitBtn.disabled = false;
             submitBtn.textContent = "CONFIRM BOOKING ✅";
             return; // STOP HERE if user intended to upload but failed
