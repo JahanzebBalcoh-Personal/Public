@@ -275,14 +275,18 @@ async function submitBooking() {
             const ref = storage.ref(`payments/${Date.now()}_${file.name}`);
             const uploadTask = ref.put(file);
             
-            // Listen to progress
-            uploadTask.on('state_changed', (snap) => {
-                const progress = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
-                submitBtn.textContent = `Uploading Screenshot... ${progress}%`;
+            await new Promise((resolve, reject) => {
+                uploadTask.on('state_changed', 
+                    (snap) => {
+                        const progress = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+                        submitBtn.textContent = `Uploading Screenshot... ${progress}%`;
+                    }, 
+                    (error) => reject(error), 
+                    () => resolve()
+                );
             });
             
-            await uploadTask;
-            screenshotUrl = await ref.getDownloadURL();
+            screenshotUrl = await uploadTask.snapshot.ref.getDownloadURL();
             console.log("Screenshot uploaded successfully:", screenshotUrl);
         } catch(e) {
             console.error("Upload failed:", e);
