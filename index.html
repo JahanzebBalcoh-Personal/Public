@@ -119,6 +119,8 @@ body {
 .p-owner { font-size: 10px; color: var(--muted); }
 .trid-box input { font-size: 20px; font-weight: 900; letter-spacing: 2px; text-align: center; color: var(--gold); }
 .trid-hint { font-size: 11px; color: var(--muted); margin-top: 8px; text-align: center; }
+.file-upload-btn { display: flex; align-items: center; justify-content: center; gap: 15px; background: var(--card2); border: 2px dashed var(--border); padding: 20px; border-radius: 16px; cursor: pointer; transition: 0.3s; color: var(--muted); font-weight: 800; text-align: center; }
+.file-upload-btn:hover { border-color: var(--gold); color: var(--text); background: rgba(240, 180, 41, 0.05); }
 .btn-gold { width: 100%; background: linear-gradient(135deg, var(--gold), var(--gold2)); color: #000; border: none; padding: 20px; font-weight: 900; border-radius: 15px; cursor: pointer; font-size: 16px; margin-top: 20px; }
 .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--green); color: #000; padding: 15px 30px; border-radius: 50px; font-weight: 800; transition: 0.4s; z-index: 1000; }
 .toast.on { transform: translateX(-50%) translateY(0); }
@@ -292,9 +294,21 @@ body {
                 </div>
             </div>
 
-            <div class="fl" style="margin-bottom: 15px;">
-                <label>Upload Payment Screenshot</label>
-                <input type="file" id="payScreenshot" accept="image/*" style="padding: 8px;">
+            <div class="fl" style="margin-bottom: 25px;">
+                <label style="margin-bottom: 5px;">Upload Payment Screenshot <span style="color:#ef4444; font-size: 14px;">*</span></label>
+                <label for="payScreenshot" class="file-upload-btn" id="fileUploadContainer">
+                    <span style="font-size:30px;">📸</span>
+                    <span id="fileNameDisplay" style="font-size:13px;">Tap here to select receipt image</span>
+                </label>
+                <input type="file" id="payScreenshot" accept="image/*" style="display:none;" onchange="
+                    var f = this.files[0];
+                    if(f) {
+                        document.getElementById('fileNameDisplay').innerText = f.name;
+                        document.getElementById('fileNameDisplay').style.color = 'var(--gold)';
+                        document.getElementById('fileUploadContainer').style.borderColor = 'var(--gold)';
+                        document.getElementById('fileUploadContainer').style.background = 'rgba(240, 180, 41, 0.1)';
+                    }
+                ">
             </div>
 
 
