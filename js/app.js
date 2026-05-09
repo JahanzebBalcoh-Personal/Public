@@ -207,7 +207,14 @@ function renderSlots() {
 function calcPrice() {
     const hrs = parseFloat(document.getElementById('matchHrs').value) || 0;
     const price = hrs * RATE;
+    const adv = price * 0.5;
     document.getElementById('priceVal').textContent = `Rs. ${price.toLocaleString()}`;
+    document.getElementById('advAmtDisplay').textContent = `Rs. ${adv.toLocaleString()}`;
+    document.getElementById('advAmount').value = adv;
+    
+    // Also update instructions
+    const el = document.getElementById('payInstrAmt');
+    if (el) el.textContent = `Rs. ${adv.toLocaleString()}`;
 }
 
 async function submitBooking() {
@@ -225,8 +232,12 @@ async function submitBooking() {
         return;
     }
 
-    if(!trid && !file) {
-        toast('Please enter TRID or upload Screenshot!', 'err');
+    if(!file) {
+        toast('Payment Screenshot upload karna LAZMI hai!', 'err');
+        return;
+    }
+    if(!trid) {
+        toast('Transaction ID enter karna LAZMI hai!', 'err');
         return;
     }
 
@@ -261,33 +272,37 @@ async function submitBooking() {
 
     let screenshotUrl = "";
     if (file) {
+        submitBtn.textContent = "Uploading Receipt (Please Wait)...";
         try {
             const ref = storage.ref(`payments/${Date.now()}_${file.name}`);
             const upload = await ref.put(file);
             screenshotUrl = await upload.ref.getDownloadURL();
+            console.log("Screenshot uploaded successfully:", screenshotUrl);
         } catch(e) {
             console.error("Upload failed:", e);
+            toast('Screenshot upload failed! Please check your internet.', 'err');
+            submitBtn.disabled = false;
+            submitBtn.textContent = "CONFIRM BOOKING ✅";
+            return; // STOP HERE if user intended to upload but failed
         }
     }
 
     const booking = {
-        nm, ph, trid, date, 
+        nm, ph, trid: trid || 'N/A', date, 
         st: selectedSlot,
         hrs: parseFloat(hrs),
-        status: 'waiting_approval', // Staff will verify
-
-
+        status: 'waiting_approval',
         source: 'online_web',
         advAmt: advAmt,
         createdAt: new Date().toISOString(),
         totalAmt: parseFloat(hrs) * RATE,
         due: (parseFloat(hrs) * RATE) - advAmt,
-        nt: 'Online Booking - TRID: ' + trid,
+        nt: 'Online Booking - TRID: ' + (trid || 'No TRID'),
         screenshot: screenshotUrl
     };
 
     try {
-        toast('Submitting booking...', 'info');
+        submitBtn.textContent = "Saving Booking...";
         await db.collection('bookings').add(booking);
         
         // Add to Feed/Activity for Admin
@@ -304,11 +319,8 @@ async function submitBooking() {
             status: 'new'
         });
 
-        toast('Booking Submitted! Staff will contact you shortly. ✅', 'ok');
+        toast('Booking sent for approval! ✅', 'ok');
         document.getElementById('successOverlay').style.display = 'flex';
-        // setTimeout(() => {
-        //     window.location.reload();
-        // }, 3000);
 
     } catch(e) {
         toast('Error: ' + e.message, 'err');

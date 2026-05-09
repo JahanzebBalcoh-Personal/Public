@@ -243,16 +243,12 @@ body {
             </div>
 
             <div class="price-box">
-                <div class="p-row"><span>Slot Price:</span><span id="priceVal">Rs. 0</span></div>
-                <div class="fl" style="margin-top:10px;">
-                    <label style="color:var(--green);">SELECT ADVANCE TO PAY</label>
-                    <select id="advAmount" style="background:var(--card2); border:1.5px solid var(--green); border-radius:10px; padding:10px; color:#fff; font-weight:900; font-size:16px;" onchange="updatePayInstr()">
-                        <option value="500">Rs. 500 (Minimum)</option>
-                        <option value="1000">Rs. 1,000</option>
-                        <option value="1500">Rs. 1,500</option>
-                        <option value="2000">Rs. 2,000</option>
-                    </select>
+                <div class="p-row"><span>Total Slot Price:</span><span id="priceVal">Rs. 0</span></div>
+                <div class="p-row highlight" style="border-top:1px dashed var(--green); margin-top:10px; padding-top:10px;">
+                    <span style="color:var(--green);">ADVANCE TO PAY (50%):</span>
+                    <span id="advAmtDisplay" style="color:var(--green); font-size:22px;">Rs. 0</span>
                 </div>
+                <input type="hidden" id="advAmount" value="0">
             </div>
 
             <div class="step-title">3. Secure Booking (Advance)</div>
@@ -309,8 +305,8 @@ body {
 <!-- SUCCESS OVERLAY -->
 <div id="successOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:10000; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:30px; backdrop-filter:blur(10px);">
     <div style="font-size:80px; margin-bottom:20px;">✅</div>
-    <h1 style="color:var(--gold); font-family:'Bebas Neue',sans-serif; font-size:32px; margin-bottom:10px;">BOOKING SUBMITTED!</h1>
-    <p style="color:var(--text); margin-bottom:30px; font-size:14px; opacity:0.8;">Staff will verify your payment shortly. <br> Need immediate attention? Tap the bell below.</p>
+    <h1 style="color:var(--gold); font-family:'Bebas Neue',sans-serif; font-size:32px; margin-bottom:10px;">BOOKING SENT FOR APPROVAL!</h1>
+    <p style="color:var(--text); margin-bottom:30px; font-size:14px; opacity:0.8;">Apki booking verify honay ke liye chali gayi hai. <br> Staff payment check karke jald hi confirm kar dega.</p>
     
     <button onclick="triggerAlarm()" style="background:linear-gradient(135deg, #ef4444, #b91c1c); border:none; width:120px; height:120px; border-radius:50%; box-shadow:0 0 20px rgba(239,68,68,0.5); display:flex; align-items:center; justify-content:center; cursor:pointer; margin-bottom:20px; animation:badgePulse 1.5s infinite;">
         <span style="font-size:50px;">🔔</span>
