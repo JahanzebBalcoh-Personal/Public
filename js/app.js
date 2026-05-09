@@ -220,7 +220,8 @@ function calcPrice() {
 async function submitBooking() {
     const nm = document.getElementById('custName').value.trim();
     const ph = document.getElementById('custPhone').value.trim();
-    const trid = document.getElementById('payTrid').value.trim();
+    const payTridEl = document.getElementById('payTrid');
+    const trid = payTridEl ? payTridEl.value.trim() : '';
     const date = document.getElementById('matchDate').value;
     const file = document.getElementById('payScreenshot').files[0];
     const hrs = document.getElementById('matchHrs').value;
@@ -236,10 +237,7 @@ async function submitBooking() {
         toast('Payment Screenshot upload karna LAZMI hai!', 'err');
         return;
     }
-    if(!trid) {
-        toast('Transaction ID enter karna LAZMI hai!', 'err');
-        return;
-    }
+
 
     submitBtn.disabled = true;
     submitBtn.textContent = "Checking availability...";
@@ -297,7 +295,7 @@ async function submitBooking() {
         createdAt: new Date().toISOString(),
         totalAmt: parseFloat(hrs) * RATE,
         due: (parseFloat(hrs) * RATE) - advAmt,
-        nt: 'Online Booking - TRID: ' + (trid || 'No TRID'),
+        nt: 'Online Booking' + (trid ? ' - TRID: ' + trid : ''),
         screenshot: screenshotUrl
     };
 
