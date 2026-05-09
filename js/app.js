@@ -1,4 +1,4 @@
-const firebaseConfig={apiKey:"AIzaSyBfhbjD0b8UaISn1QrK6E-Ci5Yr7HcUTzA",authDomain:"sultans-cricket.firebaseapp.com",projectId:"sultans-cricket",storageBucket:"sultans-cricket.appspot.com",messagingSenderId:"975861366304",appId:"1:975861366304:web:6bfef2fc3e3b01d0284645"};
+const firebaseConfig={apiKey:"AIzaSyBfhbjD0b8UaISn1QrK6E-Ci5Yr7HcUTzA",authDomain:"sultans-cricket.firebaseapp.com",projectId:"sultans-cricket",storageBucket:"sultans-cricket.firebasestorage.app",messagingSenderId:"975861366304",appId:"1:975861366304:web:6bfef2fc3e3b01d0284645"};
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const storage = firebase.storage();
@@ -20,6 +20,32 @@ function parseTimeToMinutes(timeStr) {
     return h * 60 + m;
 }
 
+
+async function compressImage(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 1000;
+                let width = img.width;
+                let height = img.height;
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7);
+            };
+        };
+    });
+}
 
 let allBookings = [];
 let selectedSlot = null;
@@ -271,11 +297,14 @@ async function submitBooking() {
     let screenshotUrl = "";
     if (file) {
         try {
-            const ref = storage.ref(`payments/${Date.now()}_${file.name}`);
-            const uploadTask = ref.put(file);
+            submitBtn.textContent = "Processing Image...";
+            const compressedBlob = await compressImage(file);
+            
+            const ref = storage.ref(`payments/${Date.now()}_screenshot.jpg`);
+            const uploadTask = ref.put(compressedBlob);
             
             screenshotUrl = await new Promise((resolve, reject) => {
-                const timer = setTimeout(() => reject(new Error("Upload Timeout (Internet bohot slow hai)")), 30000);
+                const timer = setTimeout(() => reject(new Error("Upload Timeout (Connection bohot slow hai)")), 120000);
                 
                 uploadTask.on('state_changed', 
                     (snap) => {
