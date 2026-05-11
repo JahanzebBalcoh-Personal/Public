@@ -432,12 +432,32 @@ function showApprovalNotification(data) {
     
     // Also try browser notification
     if (Notification.permission === "granted") {
-        new Notification("Booking Approved! 🏏", {
+        showNotification("Booking Approved! 🏏", {
             body: `Congratulations! Your booking for ${data.st} is confirmed.`,
             icon: "img/logo.png"
         });
     }
 }
+
+function showNotification(title, options) {
+    if ("serviceWorker" in navigator && Notification.permission === "granted") {
+        navigator.serviceWorker.ready.then(reg => {
+            reg.showNotification(title, options);
+        }).catch(err => {
+            console.error("SW Notification failed, falling back:", err);
+            new Notification(title, options);
+        });
+    } else if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(title, options);
+    }
+}
+
+// Request permission on first click
+document.addEventListener('click', () => {
+    if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+    }
+}, { once: true });
 
 async function triggerAlarm() {
     try {
