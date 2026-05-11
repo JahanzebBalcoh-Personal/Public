@@ -214,42 +214,23 @@ body {
                 <input type="date" id="matchDate" onchange="loadSlots()">
             </div>
             <div class="fl">
-                <label>Duration (Hours)</label>
-                <select id="matchHrs" onchange="calcPrice()">
-                    <option value="1">1 Hour</option>
-                    <option value="1.5">1.5 Hours</option>
-                    <option value="2" selected>2 Hours</option>
-                    <option value="2.5">2.5 Hours</option>
-                    <option value="3">3 Hours</option>
-                </select>
+                <label>Match Duration (Hours) - Manual Entry</label>
+                <input type="number" id="matchHrs" value="2" step="0.1" min="0.5" placeholder="e.g. 1.5, 2, 3..." oninput="calcPrice()">
             </div>
         </div>
 
-        <div id="manualTimeBox" style="margin-bottom: 20px;">
+        <div id="manualTimeBox" style="margin-bottom: 25px; background: rgba(240, 180, 41, 0.05); padding: 15px; border-radius: 15px; border: 1px dashed var(--border);">
             <div class="fl">
-                <label>Manual Time Entry (Optional)</label>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <div style="display: flex; gap: 5px; flex: 1;">
-                        <select id="manualHour" style="flex: 1; background: var(--card2); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px; color: var(--text); outline: none;">
-                            <option value="01">01</option><option value="02">02</option><option value="03">03</option>
-                            <option value="04">04</option><option value="05">05</option><option value="06" selected>06</option>
-                            <option value="07">07</option><option value="08">08</option><option value="09">09</option>
-                            <option value="10">10</option><option value="11">11</option><option value="12">12</option>
-                        </select>
-                        <select id="manualMin" style="width: 80px; background: var(--card2); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px; color: var(--text); outline: none;">
-                            <option value="00">:00</option><option value="15">:15</option>
-                            <option value="30">:30</option><option value="45">:45</option>
-                        </select>
-                        <select id="manualAMPM" style="width: 80px; background: var(--card2); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px; color: var(--gold); font-weight: 900; outline: none;">
-                            <option value="AM">AM</option><option value="PM" selected>PM</option>
-                        </select>
-                    </div>
-                    <button class="btn-main" style="padding: 14px 25px; font-size: 14px;" onclick="checkManualTime()">Check</button>
+                <label style="color: var(--gold);">1. Select Start Time (Full Manual Clock 00-59)</label>
+                <div style="display: flex; gap: 10px; align-items: center; margin-top: 8px;">
+                    <input type="time" id="manualStartTime" style="flex: 1; background: var(--card2); border: 2px solid var(--gold); border-radius: 12px; padding: 14px; color: var(--text); outline: none; font-size: 18px; font-weight: 800;">
+                    <button class="btn-main" style="padding: 14px 25px; font-size: 14px; white-space: nowrap;" onclick="checkManualTime()">CHECK AVAILABILITY</button>
                 </div>
+                <p style="font-size: 10px; color: var(--muted); margin-top: 8px; text-align: center;">Pick any hour and any minute (0-59) using the clock icon.</p>
             </div>
         </div>
 
-        <div class="slot-grid-label">Available Slots for Today:</div>
+        <div class="slot-grid-label" id="slotGridLabel" style="font-size: 16px; border-left: 4px solid var(--gold); padding-left: 10px; margin-bottom: 20px;">Available Slots:</div>
         <div class="slot-grid" id="slotGrid">
             <div class="loading-slots">Checking availability...</div>
         </div>
@@ -320,7 +301,7 @@ body {
     <!-- BOOKINGS LIST SECTION -->
     <div class="card" style="margin-top: 40px; background: linear-gradient(135deg, #0f172a, #1e293b); border: 2px solid var(--border); overflow: hidden; padding: 0;">
         <div style="background: linear-gradient(90deg, var(--gold), var(--gold2)); color: #000; padding: 15px 25px; font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; display: flex; justify-content: space-between; align-items: center;">
-            <span>🏟️ TODAY'S MATCH SCHEDULE</span>
+            <span id="scheduleTitle">🏟️ MATCH SCHEDULE</span>
             <span style="font-size: 12px; font-family: 'Nunito', sans-serif; font-weight: 900;" id="liveDateDisplay"></span>
         </div>
         <div id="bookingsList" style="padding: 20px;">

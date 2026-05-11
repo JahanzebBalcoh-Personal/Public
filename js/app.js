@@ -104,11 +104,17 @@ async function loadSlots() {
             allBookings = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
             // Update live date display
             const liveDate = document.getElementById('liveDateDisplay');
-            if(liveDate) {
-                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                const dObj = new Date(date);
-                liveDate.textContent = dObj.toLocaleDateString('en-PK', options);
-            }
+            const slotGridLabel = document.getElementById('slotGridLabel');
+            const scheduleTitle = document.getElementById('scheduleTitle');
+            
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dObj = new Date(date);
+            const dateStr = dObj.toLocaleDateString('en-PK', options);
+
+            if(liveDate) liveDate.textContent = dateStr;
+            if(slotGridLabel) slotGridLabel.innerHTML = `📅 Available Slots for <span style="color:#fff;">${dateStr}</span>:`;
+            if(scheduleTitle) scheduleTitle.innerHTML = `🏟️ MATCH SCHEDULE: <span style="color:#000;">${dateStr}</span>`;
+
             renderSlots();
             renderBookingsList();
         }, (e) => {
@@ -166,13 +172,21 @@ async function approveBooking(id) {
 }
 
 function checkManualTime() {
-    const h = document.getElementById('manualHour').value;
-    const m = document.getElementById('manualMin').value;
-    const ampm = document.getElementById('manualAMPM').value;
+    const timeVal = document.getElementById('manualStartTime').value;
+    if (!timeVal) {
+        toast('Please select a time first! ⏰', 'err');
+        return;
+    }
 
-    const formatted = `${h}:${m} ${ampm}`;
+    // Convert 24h time to 12h format for display
+    const [h24, min] = timeVal.split(':');
+    let h12 = parseInt(h24) % 12 || 12;
+    const ampm = parseInt(h24) >= 12 ? 'PM' : 'AM';
+    const formatted = `${String(h12).padStart(2, '0')}:${min} ${ampm}`;
+
     const newStart = parseTimeToMinutes(formatted);
-    const newEnd = newStart + 60; // Assume at least 1 hr for check
+    const durationHrs = parseFloat(document.getElementById('matchHrs').value) || 1;
+    const newEnd = newStart + (durationHrs * 60);
 
     const isBkd = allBookings.some(b => {
         if (b.status === 'cancelled') return false;
@@ -182,14 +196,16 @@ function checkManualTime() {
     });
 
     if (isBkd) {
-        toast(`Slot ${formatted} or part of it is already BOOKED! ❌`, 'err');
-
+        toast(`Time ${formatted} overlaps with an existing booking! ❌`, 'err');
+        selectedSlot = null;
     } else {
         selectedSlot = formatted;
         renderSlots();
         document.getElementById('bookingForm').style.display = 'block';
         calcPrice();
         toast(`Slot ${formatted} is AVAILABLE! ✅`, 'ok');
+        // Scroll to details
+        document.getElementById('bookingForm').scrollIntoView({ behavior: 'smooth' });
     }
 }
 
