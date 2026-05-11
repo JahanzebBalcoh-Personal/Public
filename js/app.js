@@ -2,6 +2,12 @@ const firebaseConfig={apiKey:"AIzaSyBfhbjD0b8UaISn1QrK6E-Ci5Yr7HcUTzA",authDomai
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const storage = firebase.storage();
+var messaging = null;
+try {
+    if (firebase.messaging.isSupported()) {
+        messaging = firebase.messaging();
+    }
+} catch (e) { console.warn("Messaging not supported:", e); }
 
 // Enable Persistence for Speed
 db.enablePersistence().catch(err => console.warn("Persistence failed:", err.code));
@@ -89,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const pendingId = localStorage.getItem('lastBookingId');
         if (pendingId) {
             startApprovalListener(pendingId);
+            registerMessaging(pendingId);
         }
 });
 
@@ -453,6 +460,22 @@ function showNotification(title, options) {
     } else if ("Notification" in window && Notification.permission === "granted") {
         new Notification(title, options);
     }
+}
+
+// Background Token Registration for Customer
+async function registerMessaging(bookingId) {
+    if (!messaging || !bookingId) return;
+    try {
+        const token = await messaging.getToken({ vapidKey: 'BMXvX-X_X_X_X_X_X_X_X_X_X' });
+        if (token) {
+            await db.collection('fcm_tokens').doc(bookingId).set({
+                token: token,
+                updatedAt: new Date().toISOString(),
+                type: 'customer'
+            });
+            console.log("Customer FCM Token registered");
+        }
+    } catch (e) { console.warn("Customer FCM Token failed:", e); }
 }
 
 // Request permission on first click
