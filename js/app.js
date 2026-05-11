@@ -90,7 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pendingId) {
             startApprovalListener(pendingId);
         }
-    });
 });
 
 async function fetchSettings() {
