@@ -147,7 +147,10 @@ function renderBookingsList() {
     list.innerHTML = allBookings.map(b => `
         <div style="background:rgba(255,255,255,0.02); border:1.5px solid var(--border); border-radius:16px; padding:20px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; transition:0.3s; border-left:5px solid ${getStatusColor(b.status)};">
             <div style="flex:1;">
-                <div style="font-family:'Bebas Neue',sans-serif; font-size:24px; color:var(--text); letter-spacing:1px; line-height:1;">${b.st}</div>
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                    <span style="background:rgba(240,180,41,0.1); color:var(--gold); font-size:10px; font-weight:900; padding:2px 8px; border-radius:4px; border:1px solid rgba(240,180,41,0.2);">${b.date}</span>
+                    <div style="font-family:'Bebas Neue',sans-serif; font-size:24px; color:var(--text); letter-spacing:1px; line-height:1;">${b.st}</div>
+                </div>
                 <div style="font-size:11px; color:var(--muted); font-weight:800; margin-top:4px; text-transform:uppercase;">${b.hrs} HOURS MATCH</div>
                 <div style="margin-top:12px; display:flex; align-items:center; gap:10px;">
                     <div style="width:30px; height:30px; background:var(--card2); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; border:1px solid var(--border);">🏏</div>
