@@ -72,12 +72,24 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("matchDate element not found!");
     }
 
-    fetchSettings().then(() => {
-        console.log("Settings fetched, loading slots...");
-        loadSlots();
-    }).catch(e => {
-        console.error("Init Error:", e);
-        loadSlots(); // try anyway
+        fetchSettings().then(() => {
+            console.log("Settings fetched, loading slots...");
+            loadSlots();
+        }).catch(e => {
+            console.error("Init Error:", e);
+            loadSlots(); // try anyway
+        });
+
+        // Request notification permission
+        if ("Notification" in window && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+
+        // Check for pending approval
+        const pendingId = localStorage.getItem('lastBookingId');
+        if (pendingId) {
+            startApprovalListener(pendingId);
+        }
     });
 });
 
@@ -345,7 +357,7 @@ async function submitBooking() {
     };
 
     try {
-        await db.collection('bookings').add(booking);
+        const docRef = await db.collection('bookings').add(booking);
         
         // Add to Feed/Activity for Admin
         await db.collection('feed').add({
@@ -367,10 +379,64 @@ async function submitBooking() {
         submitBtn.style.background = "var(--blue)";
         submitBtn.style.color = "#fff";
         toast('Booking sent for approval! ✅', 'ok');
+        
+        // Save to local storage to track approval
+        localStorage.setItem('lastBookingId', docRef.id);
+        localStorage.setItem('lastBookingStatus', 'waiting_approval');
+        
         document.getElementById('successOverlay').style.display = 'flex';
+        startApprovalListener(docRef.id);
 
     } catch(e) {
         toast('Error: ' + e.message, 'err');
+    }
+}
+
+function startApprovalListener(id) {
+    if (!id) return;
+    db.collection('bookings').doc(id).onSnapshot((doc) => {
+        if (doc.exists) {
+            const data = doc.data();
+            if (data.status === 'approved' || data.status === 'pre') {
+                showApprovalNotification(data);
+                localStorage.removeItem('lastBookingId');
+                localStorage.removeItem('lastBookingStatus');
+            } else if (data.status === 'rejected' || data.status === 'cancelled') {
+                toast('Your booking was ' + data.status + '.', 'err');
+                localStorage.removeItem('lastBookingId');
+                localStorage.removeItem('lastBookingStatus');
+            }
+        }
+    });
+}
+
+function showApprovalNotification(data) {
+    // Show a prominent success modal
+    const overlay = document.getElementById('successOverlay');
+    if (overlay) {
+        overlay.innerHTML = `
+            <div class="success-card" style="text-align:center; background:var(--card); padding:30px; border-radius:24px; border:2px solid var(--gold); box-shadow:0 0 50px rgba(240,180,41,0.2); max-width:90%; animation: slideUp 0.5s ease-out;">
+                <div style="font-size:60px; margin-bottom:20px;">🎊</div>
+                <h2 style="font-family:'Bebas Neue',sans-serif; font-size:32px; color:var(--gold); letter-spacing:2px; margin-bottom:10px;">CONGRATULATIONS!</h2>
+                <p style="font-size:16px; color:#fff; font-weight:700; margin-bottom:20px;">Your booking for <b>${data.st}</b> has been <span style="color:var(--green);">APPROVED</span>! ✅</p>
+                <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin-bottom:20px; text-align:left; font-size:13px;">
+                    <div style="margin-bottom:5px; color:var(--muted);">Match Details:</div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>📅 Date:</span> <b>${data.date}</b></div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>⏰ Time:</span> <b>${data.st}</b></div>
+                    <div style="display:flex; justify-content:space-between;"><span>⏳ Duration:</span> <b>${data.hrs} Hours</b></div>
+                </div>
+                <button onclick="location.reload()" style="background:var(--gold); color:#000; border:none; padding:12px 30px; border-radius:12px; font-weight:900; cursor:pointer; width:100%; font-family:'Nunito',sans-serif;">GREAT, THANKS! 🏏</button>
+            </div>
+        `;
+        overlay.style.display = 'flex';
+    }
+    
+    // Also try browser notification
+    if (Notification.permission === "granted") {
+        new Notification("Booking Approved! 🏏", {
+            body: `Congratulations! Your booking for ${data.st} is confirmed.`,
+            icon: "img/logo.png"
+        });
     }
 }
 
