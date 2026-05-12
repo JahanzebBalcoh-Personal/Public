@@ -119,7 +119,8 @@ async function loadSlots() {
 
     unsubscribe = db.collection('bookings').where('date', '==', date)
         .onSnapshot((snapshot) => {
-            allBookings = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+            allBookings = snapshot.docs.map(d => ({id: d.id, ...d.data()}))
+                .filter(b => !b.isDeleted); // Ignore soft-deleted
             // Update live date display
             const liveDate = document.getElementById('liveDateDisplay');
             const slotGridLabel = document.getElementById('slotGridLabel');
@@ -146,12 +147,14 @@ function renderBookingsList() {
     const date = document.getElementById('matchDate').value;
     if (!list) return;
     
-    if (allBookings.length === 0) {
+    const visibleBookings = allBookings.filter(b => !b.isDeleted);
+    
+    if (visibleBookings.length === 0) {
         list.innerHTML = `<div style="text-align:center; color:var(--muted); padding:20px;">No matches scheduled for <b>${date}</b>.</div>`;
         return;
     }
 
-    list.innerHTML = allBookings.map(b => `
+    list.innerHTML = visibleBookings.map(b => `
         <div style="background:rgba(255,255,255,0.02); border:1.5px solid var(--border); border-radius:16px; padding:20px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; transition:0.3s; border-left:5px solid ${getStatusColor(b.status)};">
             <div style="flex:1;">
                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
@@ -210,7 +213,7 @@ function checkManualTime() {
     const newEnd = newStart + (durationHrs * 60);
 
     const isBkd = allBookings.some(b => {
-        if (b.status === 'cancelled') return false;
+        if (b.status === 'cancelled' || b.isDeleted) return false;
         const bStart = parseTimeToMinutes(b.st);
         const bEnd = bStart + (parseFloat(b.hrs || 1) * 60);
         return (newStart < bEnd && newEnd > bStart);
@@ -247,7 +250,7 @@ function renderSlots() {
         const newEnd = newStart + 60; 
         
         const isBkd = allBookings.some(b => {
-            if (b.status === 'cancelled') return false;
+            if (b.status === 'cancelled' || b.isDeleted) return false;
             const bStart = parseTimeToMinutes(b.st);
             const bEnd = bStart + (parseFloat(b.hrs || 1) * 60);
             return (newStart < bEnd && newEnd > bStart);
@@ -308,64 +311,64 @@ async function submitBooking() {
     submitBtn.disabled = true;
     submitBtn.textContent = "Checking availability...";
 
-    // Re-check availability right before submitting (Overlap aware)
-    const checkSnap = await db.collection('bookings')
-        .where('date', '==', date)
-        .get();
-    
-    const newStart = parseTimeToMinutes(selectedSlot);
-    const newEnd = newStart + (parseFloat(hrs) * 60);
+    try {
+        // Re-check availability right before submitting (Overlap aware)
+        const checkSnap = await db.collection('bookings')
+            .where('date', '==', date)
+            .get();
+        
+        const newStart = parseTimeToMinutes(selectedSlot);
+        const newEnd = newStart + (parseFloat(hrs) * 60);
 
-    const activeBookings = checkSnap.docs.filter(d => {
-        const b = d.data();
-        if (b.status === 'cancelled') return false;
-        const bStart = parseTimeToMinutes(b.st);
-        const bEnd = bStart + (parseFloat(b.hrs || 1) * 60);
-        return (newStart < bEnd && newEnd > bStart);
-    });
+        const activeBookings = checkSnap.docs.filter(d => {
+            const b = d.data();
+            if (b.status === 'cancelled' || b.isDeleted) return false;
+            const bStart = parseTimeToMinutes(b.st);
+            const bEnd = bStart + (parseFloat(b.hrs || 1) * 60);
+            return (newStart < bEnd && newEnd > bStart);
+        });
 
-    if (activeBookings.length > 0) {
-        toast('Sorry, this slot or time range was just BOOKED! ❌', 'err');
-        submitBtn.disabled = false;
-        submitBtn.textContent = "CONFIRM BOOKING ✅";
-        return;
-    }
-
-
-    submitBtn.textContent = "Processing...";
-
-    let screenshotUrl = "";
-    if (file) {
-        try {
-            submitBtn.textContent = "Processing Image...";
-            screenshotUrl = await compressImage(file);
-            console.log("Image processed to Base64 (Size: " + Math.round(screenshotUrl.length/1024) + " KB)");
-        } catch(e) {
-            console.error("Image error:", e);
-            alert("IMAGE ERROR: " + e.message);
+        if (activeBookings.length > 0) {
+            toast('Sorry, this slot or time range was just BOOKED! ❌', 'err');
             submitBtn.disabled = false;
             submitBtn.textContent = "CONFIRM BOOKING ✅";
             return;
         }
-    }
 
-    submitBtn.textContent = "Saving Booking...";
 
-    const booking = {
-        nm, ph, trid: trid || 'N/A', date, 
-        st: selectedSlot,
-        hrs: parseFloat(hrs),
-        status: 'waiting_approval',
-        source: 'online_web',
-        advAmt: advAmt,
-        createdAt: new Date().toISOString(),
-        totalAmt: parseFloat(hrs) * RATE,
-        due: (parseFloat(hrs) * RATE) - advAmt,
-        nt: 'Online Booking' + (trid ? ' - TRID: ' + trid : ''),
-        screenshot: screenshotUrl
-    };
+        submitBtn.textContent = "Processing...";
 
-    try {
+        let screenshotUrl = "";
+        if (file) {
+            try {
+                submitBtn.textContent = "Processing Image...";
+                screenshotUrl = await compressImage(file);
+                console.log("Image processed to Base64 (Size: " + Math.round(screenshotUrl.length/1024) + " KB)");
+            } catch(e) {
+                console.error("Image error:", e);
+                alert("IMAGE ERROR: " + e.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = "CONFIRM BOOKING ✅";
+                return;
+            }
+        }
+
+        submitBtn.textContent = "Saving Booking...";
+
+        const booking = {
+            nm, ph, trid: trid || 'N/A', date, 
+            st: selectedSlot,
+            hrs: parseFloat(hrs),
+            status: 'waiting_approval',
+            source: 'online_web',
+            advAmt: advAmt,
+            createdAt: new Date().toISOString(),
+            totalAmt: parseFloat(hrs) * RATE,
+            due: (parseFloat(hrs) * RATE) - advAmt,
+            nt: 'Online Booking' + (trid ? ' - TRID: ' + trid : ''),
+            screenshot: screenshotUrl
+        };
+
         const docRef = await db.collection('bookings').add(booking);
         
         // Add to Feed/Activity for Admin
@@ -397,7 +400,10 @@ async function submitBooking() {
         startApprovalListener(docRef.id);
 
     } catch(e) {
+        console.error("Booking Submission Error:", e);
         toast('Error: ' + e.message, 'err');
+        submitBtn.disabled = false;
+        submitBtn.textContent = "CONFIRM BOOKING ✅";
     }
 }
 
