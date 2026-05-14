@@ -64,16 +64,6 @@ let RATE = 2000; // Default
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("Public App initializing...");
     
-    // Background Auth: Sign in anonymously to get permission to read Firestore
-    try {
-        if (!firebase.auth().currentUser) {
-            await firebase.auth().signInAnonymously();
-            console.log("Anonymous Auth Success ✅");
-        }
-    } catch (e) {
-        console.error("Auth Error:", e);
-    }
-
     // Set min date to today
     const dt = document.getElementById('matchDate');
     if (dt) {
