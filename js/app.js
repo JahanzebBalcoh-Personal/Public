@@ -61,8 +61,19 @@ let selectedSlot = null;
 let RATE = 2000; // Default
 
 // Init
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     console.log("Public App initializing...");
+    
+    // Background Auth: Sign in anonymously to get permission to read Firestore
+    try {
+        if (!firebase.auth().currentUser) {
+            await firebase.auth().signInAnonymously();
+            console.log("Anonymous Auth Success ✅");
+        }
+    } catch (e) {
+        console.error("Auth Error:", e);
+    }
+
     // Set min date to today
     const dt = document.getElementById('matchDate');
     if (dt) {
@@ -78,25 +89,25 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("matchDate element not found!");
     }
 
-        fetchSettings().then(() => {
-            console.log("Settings fetched, loading slots...");
-            loadSlots();
-        }).catch(e => {
-            console.error("Init Error:", e);
-            loadSlots(); // try anyway
-        });
+    fetchSettings().then(() => {
+        console.log("Settings fetched, loading slots...");
+        loadSlots();
+    }).catch(e => {
+        console.error("Init Error:", e);
+        loadSlots(); // try anyway
+    });
 
-        // Request notification permission
-        if ("Notification" in window && Notification.permission !== "granted") {
-            Notification.requestPermission();
-        }
+    // Request notification permission
+    if ("Notification" in window && Notification.permission !== "granted") {
+        Notification.requestPermission();
+    }
 
-        // Check for pending approval
-        const pendingId = localStorage.getItem('lastBookingId');
-        if (pendingId) {
-            startApprovalListener(pendingId);
-            registerMessaging(pendingId);
-        }
+    // Check for pending approval
+    const pendingId = localStorage.getItem('lastBookingId');
+    if (pendingId) {
+        startApprovalListener(pendingId);
+        registerMessaging(pendingId);
+    }
 });
 
 async function fetchSettings() {
