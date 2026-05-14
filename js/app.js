@@ -297,6 +297,22 @@ function calcPrice() {
     if (el) el.textContent = `Rs. ${adv.toLocaleString()}`;
 }
 
+function calcPrice() {
+    const hrs = parseFloat(document.getElementById('matchHrs').value) || 0;
+    const price = hrs * RATE;
+    const adv = price * 0.5;
+    
+    const priceVal = document.getElementById('priceVal');
+    const advAmtDisplay = document.getElementById('advAmtDisplay');
+    const advAmount = document.getElementById('advAmount');
+    const payInstrAmt = document.getElementById('payInstrAmt');
+
+    if (priceVal) priceVal.textContent = `Rs. ${price.toLocaleString()}`;
+    if (advAmtDisplay) advAmtDisplay.textContent = `Rs. ${adv.toLocaleString()}`;
+    if (advAmount) advAmount.value = adv;
+    if (payInstrAmt) payInstrAmt.textContent = `Rs. ${adv.toLocaleString()}`;
+}
+
 async function submitBooking() {
     const submitBtn = document.getElementById('submitBtn');
     const nm = document.getElementById('custName').value.trim();
