@@ -298,26 +298,38 @@ function calcPrice() {
 }
 
 async function submitBooking() {
+    const submitBtn = document.getElementById('submitBtn');
     const nm = document.getElementById('custName').value.trim();
     const ph = document.getElementById('custPhone').value.trim();
+    const hrs = document.getElementById('matchHrs').value;
+    const advAmt = parseFloat(document.getElementById('advAmount').value) || 0;
     const payTridEl = document.getElementById('payTrid');
     const trid = payTridEl ? payTridEl.value.trim() : '';
     const date = document.getElementById('matchDate').value;
     const file = document.getElementById('payScreenshot').files[0];
-    const hrs = document.getElementById('matchHrs').value;
-    const advAmt = parseFloat(document.getElementById('advAmount').value) || 500;
-    const submitBtn = document.getElementById('submitBtn');
 
-    if(!nm || !ph || !selectedSlot) {
-        toast('Please fill Name, Phone and select a Slot!', 'err');
+    if (!nm || !ph || !hrs || !selectedSlot) {
+        toast('Please fill Name, Phone and select a Slot! ⚠️', 'err');
         return;
     }
 
-    if(!file) {
-        toast('Payment Screenshot upload karna LAZMI hai!', 'err');
+    if (!file) {
+        toast('Payment Screenshot upload karna LAZMI hai! 📸', 'err');
         return;
     }
 
+    // Ensure user is authenticated (Anonymous or otherwise)
+    if (!firebase.auth().currentUser) {
+        try {
+            submitBtn.textContent = "Authenticating...";
+            await firebase.auth().signInAnonymously();
+            console.log("Anonymous Auth Success for Booking ✅");
+        } catch (authErr) {
+            console.error("Critical Auth Failure:", authErr);
+            toast('Auth Error: Please check Firebase settings.', 'err');
+            return;
+        }
+    }
 
     submitBtn.disabled = true;
     submitBtn.textContent = "Checking availability...";
