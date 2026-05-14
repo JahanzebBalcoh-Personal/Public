@@ -334,24 +334,11 @@ async function submitBooking() {
         return;
     }
 
-    // Ensure user is authenticated (Anonymous or otherwise)
-    if (!firebase.auth().currentUser) {
-        try {
-            submitBtn.textContent = "Authenticating...";
-            await firebase.auth().signInAnonymously();
-            console.log("Anonymous Auth Success for Booking ✅");
-        } catch (authErr) {
-            console.error("Critical Auth Failure:", authErr);
-            toast('Auth Error: Please check Firebase settings.', 'err');
-            return;
-        }
-    }
-
     submitBtn.disabled = true;
-    submitBtn.textContent = "Checking availability...";
+    submitBtn.textContent = "Saving Booking...";
 
     try {
-        // Re-check availability right before submitting (Overlap aware)
+        // Re-check availability right before submitting
         const checkSnap = await db.collection('bookings')
             .where('date', '==', date)
             .get();
