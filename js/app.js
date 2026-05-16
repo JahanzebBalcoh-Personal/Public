@@ -390,7 +390,7 @@ async function submitBooking() {
         // Add to Feed/Activity for Admin
         await db.collection('feed').add({
             txt: `New Online Booking from ${nm} for ${selectedSlot}`,
-            at: new Date().toISOString(),
+            at: firebase.firestore.Timestamp.now(), // Use server-side consistent timestamp
             type: 'booking',
             screenshot: screenshotUrl
         });
@@ -398,7 +398,7 @@ async function submitBooking() {
         // TRIGGER REAL-TIME SIREN/ALERT FOR STAFF
         await db.collection('alerts').add({
             txt: `🚨 NEW BOOKING: ${nm} @ ${selectedSlot}`,
-            at: new Date().toISOString(),
+            at: firebase.firestore.Timestamp.now(), // Instant trigger for siren
             status: 'new',
             screenshot: screenshotUrl
         });
