@@ -9,8 +9,20 @@ try {
     }
 } catch (e) { console.warn("Messaging not supported:", e); }
 
-// Enable Persistence for Speed
 db.enablePersistence().catch(err => console.warn("Persistence failed:", err.code));
+
+function normalizePhone(phone) {
+    if (!phone) return '';
+    let p = phone.replace(/\D/g, '');
+    if (p.startsWith('923') && p.length === 12) {
+        p = '03' + p.slice(3);
+    }
+    if (p.startsWith('3') && p.length === 10) {
+        p = '0' + p;
+    }
+    return p;
+}
+
 
 function parseTimeToMinutes(timeStr) {
     if (!timeStr) return 0;
@@ -371,8 +383,10 @@ async function submitBooking() {
 
         submitBtn.textContent = "Saving Booking...";
 
+        const normalizedPh = normalizePhone(ph);
+
         const booking = {
-            nm, ph, trid: trid || 'N/A', date, 
+            nm, ph: normalizedPh, trid: trid || 'N/A', date, 
             st: selectedSlot,
             hrs: parseFloat(hrs),
             status: 'waiting_approval',
@@ -412,23 +426,14 @@ async function submitBooking() {
         localStorage.setItem('lastBookingId', docRef.id);
         localStorage.setItem('lastBookingStatus', 'waiting_approval');
         
-        // Save to booking history (by phone number)
-        var histKey = 'scc_history_' + ph.replace(/\D/g,'');
-        var hist = JSON.parse(localStorage.getItem(histKey) || '[]');
-        hist.unshift({
-            id: docRef.id,
-            nm: nm, ph: ph, date: date,
-            st: selectedSlot, hrs: parseFloat(hrs),
-            advAmt: advAmt, totalAmt: parseFloat(hrs) * RATE,
-            status: 'waiting_approval',
-            createdAt: new Date().toISOString()
-        });
-        if (hist.length > 20) hist = hist.slice(0, 20); // max 20 bookings
-        localStorage.setItem(histKey, JSON.stringify(hist));
-        localStorage.setItem('scc_last_phone', ph.replace(/\D/g,''));
+        // Save phone number for history listener
+        localStorage.setItem('scc_last_phone', normalizedPh);
+        
+        // Start history listener if it wasn't running
+        startHistoryListener(normalizedPh);
         
         document.getElementById('successOverlay').style.display = 'flex';
-        showSuccessCard({nm:nm, ph:ph, date:date, st:selectedSlot, hrs:parseFloat(hrs), advAmt:advAmt}, docRef.id);
+        showSuccessCard({nm:nm, ph:normalizedPh, date:date, st:selectedSlot, hrs:parseFloat(hrs), advAmt:advAmt, totalAmt:parseFloat(hrs)*RATE}, docRef.id);
         startApprovalListener(docRef.id);
 
     } catch(e) {
@@ -439,13 +444,34 @@ async function submitBooking() {
     }
 }
 
+var currentBookingForReceipt = null;
+var currentBookingIdForReceipt = null;
+var historyListener = null;
+
+function startHistoryListener(ph) {
+    if (!ph) return;
+    if (historyListener) return; // already listening
+    historyListener = db.collection('bookings')
+        .where('ph', '==', ph)
+        .onSnapshot((snap) => {
+            var liveBookings = snap.docs.map(function(doc) {
+                return Object.assign({id: doc.id}, doc.data());
+            }).sort(function(a, b) {
+                return (b.createdAt || b.date || '').localeCompare(a.createdAt || a.date || '');
+            });
+            renderMyBookings(liveBookings);
+        }, (err) => {
+            console.error("History listen error:", err);
+        });
+}
+
 function startApprovalListener(id) {
     if (!id) return;
     db.collection('bookings').doc(id).onSnapshot((doc) => {
         if (doc.exists) {
             const data = doc.data();
             if (data.status === 'approved' || data.status === 'pre') {
-                showApprovalNotification(data);
+                showApprovalNotification(data, id);
                 localStorage.removeItem('lastBookingId');
                 localStorage.removeItem('lastBookingStatus');
             } else if (data.status === 'rejected' || data.status === 'cancelled') {
@@ -457,12 +483,13 @@ function startApprovalListener(id) {
     });
 }
 
-function showApprovalNotification(data) {
+function showApprovalNotification(data, id) {
     // Show a prominent success modal
     const overlay = document.getElementById('successOverlay');
     if (overlay) {
+        const safeData = JSON.stringify(data).replace(/"/g, '&quot;');
         overlay.innerHTML = `
-            <div class="success-card" style="text-align:center; background:var(--card); padding:30px; border-radius:24px; border:2px solid var(--gold); box-shadow:0 0 50px rgba(240,180,41,0.2); max-width:90%; animation: slideUp 0.5s ease-out;">
+            <div class="success-card" style="text-align:center; background:var(--card); padding:30px; border-radius:24px; border:2px solid var(--gold); box-shadow:0 0 50px rgba(240,180,41,0.2); max-width:400px; width: 100%; animation: slideUp 0.5s ease-out;">
                 <div style="font-size:60px; margin-bottom:20px;">🎊</div>
                 <h2 style="font-family:'Bebas Neue',sans-serif; font-size:32px; color:var(--gold); letter-spacing:2px; margin-bottom:10px;">CONGRATULATIONS!</h2>
                 <p style="font-size:16px; color:#fff; font-weight:700; margin-bottom:20px;">Your booking for <b>${data.st}</b> has been <span style="color:var(--green);">APPROVED</span>! ✅</p>
@@ -472,7 +499,10 @@ function showApprovalNotification(data) {
                     <div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span>⏰ Time:</span> <b>${data.st}</b></div>
                     <div style="display:flex; justify-content:space-between;"><span>⏳ Duration:</span> <b>${data.hrs} Hours</b></div>
                 </div>
-                <button onclick="location.reload()" style="background:var(--gold); color:#000; border:none; padding:12px 30px; border-radius:12px; font-weight:900; cursor:pointer; width:100%; font-family:'Nunito',sans-serif;">GREAT, THANKS! 🏏</button>
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                  <button onclick="downloadReceipt('${id}', ${safeData})" style="flex:1; background:linear-gradient(135deg,var(--green),#15803d); color:#fff; border:none; border-radius:12px; padding:14px; font-family:'Nunito',sans-serif; font-size:13px; font-weight:900; cursor:pointer;">📥 SAVE RECEIPT</button>
+                  <button onclick="location.reload()" style="flex:1; background:var(--gold); color:#000; border:none; border-radius:12px; padding:14px; font-family:'Nunito',sans-serif; font-size:13px; font-weight:900; cursor:pointer;">GREAT! 🏏</button>
+                </div>
             </div>
         `;
         overlay.style.display = 'flex';
@@ -536,6 +566,7 @@ async function triggerAlarm() {
         toast('Failed to alert staff.', 'err');
     }
 }
+
 function toast(msg, type) {
     const t = document.getElementById('toast');
     if (!t) return;
@@ -566,11 +597,17 @@ window.addEventListener('load', () => {
     }, 300);
     
     // Show my bookings if phone exists
-    renderMyBookings();
+    var ph = localStorage.getItem('scc_last_phone') || '';
+    if (ph) {
+        startHistoryListener(ph);
+    }
 });
 
 // Show success card with booking details
 function showSuccessCard(bookingData, bookingId) {
+    currentBookingForReceipt = bookingData;
+    currentBookingIdForReceipt = bookingId;
+    
     var overlay = document.getElementById('successOverlay');
     var msg = document.getElementById('successMsg');
     var scDate = document.getElementById('sc-date');
@@ -589,12 +626,14 @@ function showSuccessCard(bookingData, bookingId) {
 }
 
 // Download receipt as image
-function downloadReceipt() {
-    var lastId = localStorage.getItem('lastBookingId') || '';
-    var ph = localStorage.getItem('scc_last_phone') || '';
-    var histKey = 'scc_history_' + ph;
-    var hist = JSON.parse(localStorage.getItem(histKey) || '[]');
-    var bk = hist[0] || {};
+function downloadReceipt(bookingId, bookingData) {
+    var lastId = bookingId || currentBookingIdForReceipt || localStorage.getItem('lastBookingId') || '';
+    var bk = bookingData || currentBookingForReceipt;
+    
+    if (!bk) {
+        toast('No receipt details found.', 'err');
+        return;
+    }
     
     var canvas = document.createElement('canvas');
     canvas.width = 800; canvas.height = 500;
@@ -615,7 +654,7 @@ function downloadReceipt() {
     
     ctx.fillStyle = '#64748b';
     ctx.font = '14px Arial';
-    ctx.fillText('Near Menssion Marriage Club, MA Jinnah Road, Multan', 40, 82);
+    ctx.fillText('Near Mansion Marriage Club, MA Jinnah Road, Multan', 40, 82);
     
     // Divider
     ctx.strokeStyle = 'rgba(240,180,41,0.3)';
@@ -623,15 +662,23 @@ function downloadReceipt() {
     ctx.beginPath(); ctx.moveTo(40, 100); ctx.lineTo(760, 100); ctx.stroke();
     
     // RECEIPT title
-    ctx.fillStyle = '#22c55e';
+    var isApproved = bk.status === 'approved' || bk.status === 'pre' || bk.status === 'paid' || bk.status === 'partial';
+    ctx.fillStyle = isApproved ? '#22c55e' : '#f0b429';
     ctx.font = 'bold 20px Arial';
-    ctx.fillText('BOOKING RECEIPT', 40, 135);
+    ctx.fillText(isApproved ? 'CONFIRMED BOOKING RECEIPT' : 'BOOKING REQUEST RECEIPT', 40, 135);
     
     ctx.fillStyle = '#64748b';
     ctx.font = '12px Arial';
-    ctx.fillText('REF: #' + lastId.slice(-6).toUpperCase(), 40, 155);
+    ctx.fillText('REF: #' + (lastId || '').slice(-6).toUpperCase(), 40, 155);
     
     // Details
+    var displayStatus = 'WAITING APPROVAL';
+    if (bk.status === 'approved' || bk.status === 'pre') displayStatus = 'APPROVED / CONFIRMED';
+    if (bk.status === 'paid') displayStatus = 'PAID / CONFIRMED';
+    if (bk.status === 'partial') displayStatus = 'PARTIALLY PAID / CONFIRMED';
+    if (bk.status === 'rejected') displayStatus = 'REJECTED';
+    if (bk.status === 'cancelled') displayStatus = 'CANCELLED';
+
     ctx.fillStyle = '#f1f5f9';
     ctx.font = 'bold 16px Arial';
     var details = [
@@ -642,12 +689,16 @@ function downloadReceipt() {
         ['Duration:', (bk.hrs || '-') + ' Hours'],
         ['Advance Paid:', 'Rs. ' + parseInt(bk.advAmt || 0).toLocaleString()],
         ['Total Amount:', 'Rs. ' + parseInt(bk.totalAmt || 0).toLocaleString()],
-        ['Status:', 'WAITING APPROVAL'],
+        ['Status:', displayStatus],
     ];
     details.forEach(function(row, i) {
         ctx.fillStyle = '#64748b';
         ctx.fillText(row[0], 40, 200 + i * 32);
-        ctx.fillStyle = '#f1f5f9';
+        if (row[0] === 'Status:') {
+            ctx.fillStyle = isApproved ? '#22c55e' : '#f0b429';
+        } else {
+            ctx.fillStyle = '#f1f5f9';
+        }
         ctx.fillText(row[1], 250, 200 + i * 32);
     });
     
@@ -661,19 +712,16 @@ function downloadReceipt() {
     
     // Download
     var link = document.createElement('a');
-    link.download = 'SCC-Booking-' + lastId.slice(-6).toUpperCase() + '.png';
+    link.download = 'SCC-Booking-' + (lastId || '').slice(-6).toUpperCase() + '.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
     toast('Receipt downloaded! 📥', 'ok');
 }
 
 // Render My Bookings section
-function renderMyBookings() {
+function renderMyBookings(liveBookings) {
     var ph = localStorage.getItem('scc_last_phone') || '';
     if (!ph) return;
-    var histKey = 'scc_history_' + ph;
-    var hist = JSON.parse(localStorage.getItem(histKey) || '[]');
-    if (!hist.length) return;
     
     // Create section if not exists
     var section = document.getElementById('myBookingsSection');
@@ -686,17 +734,37 @@ function renderMyBookings() {
         if (footer) footer.parentNode.insertBefore(section, footer);
     }
     
-    section.innerHTML = '<h2 class="sh-t" style="margin-bottom:15px;">📋 My Booking History</h2>' +
-    '<p style="font-size:12px; color:var(--muted); margin-bottom:15px;">Your previous bookings on this device.</p>' +
-    hist.map(function(b) {
+    if (!liveBookings || !liveBookings.length) {
+        section.style.display = 'none';
+        return;
+    }
+    section.style.display = 'block';
+    
+    // Generate innerHTML
+    var itemsHTML = liveBookings.map(function(b) {
+        var statusLabel = (b.status || 'pending').toUpperCase();
+        if (b.status === 'waiting_approval') statusLabel = 'WAITING APPROVAL';
+        if (b.status === 'pre') statusLabel = 'APPROVED';
+        
+        var statusColor = 'var(--gold)';
+        if (b.status === 'approved' || b.status === 'pre' || b.status === 'paid') statusColor = 'var(--green)';
+        if (b.status === 'rejected' || b.status === 'cancelled') statusColor = 'var(--red)';
+        
+        const safeData = JSON.stringify(b).replace(/"/g, '&quot;');
+        
         return '<div style="background:var(--card); border:1.5px solid var(--border); border-radius:14px; padding:15px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">' +
             '<div>' +
             '<div style="font-family:\'Bebas Neue\',sans-serif; font-size:20px; color:var(--text);">' + b.st + ' &mdash; ' + b.date + '</div>' +
-            '<div style="font-size:11px; color:var(--muted); font-weight:800;">' + b.hrs + ' HOURS &bull; Rs. ' + parseInt(b.totalAmt||0).toLocaleString() + ' TOTAL</div>' +
+            '<div style="font-size:11px; color:var(--muted); font-weight:800;">' + b.hrs + ' HOURS &bull; Rs. ' + parseInt(b.totalAmt||b.fin||0).toLocaleString() + ' TOTAL</div>' +
             '<div style="font-size:10px; color:var(--muted); margin-top:4px;">REF: #' + b.id.slice(-6).toUpperCase() + '</div>' +
             '</div>' +
-            '<div style="text-align:right;">' +
-            '<span style="background:rgba(240,180,41,0.1); color:var(--gold); font-size:9px; font-weight:900; padding:3px 10px; border-radius:20px; border:1px solid rgba(240,180,41,0.2);">' + (b.status||'pending').toUpperCase() + '</span>' +
+            '<div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:8px;">' +
+            '<span style="background:rgba(255,255,255,0.02); color:' + statusColor + '; font-size:9px; font-weight:900; padding:3px 10px; border-radius:20px; border:1px solid ' + statusColor + ';">' + statusLabel + '</span>' +
+            '<button onclick="downloadReceipt(\'' + b.id + '\', ' + safeData + ')" style="background:linear-gradient(135deg,var(--green),#15803d); color:#fff; border:none; padding:5px 12px; font-size:10px; font-weight:900; border-radius:8px; cursor:pointer;">📥 RECEIPT</button>' +
             '</div></div>';
     }).join('');
+    
+    section.innerHTML = '<h2 class="sh-t" style="margin-bottom:15px;">📋 My Booking History</h2>' +
+    '<p style="font-size:12px; color:var(--muted); margin-bottom:15px;">Your bookings linked to this phone number: <b>' + ph + '</b></p>' +
+    '<div style="max-height:400px; overflow-y:auto; padding-right:5px;">' + itemsHTML + '</div>';
 }
