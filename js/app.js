@@ -435,6 +435,9 @@ async function submitBooking() {
         document.getElementById('successOverlay').style.display = 'flex';
         showSuccessCard({nm:nm, ph:normalizedPh, date:date, st:selectedSlot, hrs:parseFloat(hrs), advAmt:advAmt, totalAmt:parseFloat(hrs)*RATE}, docRef.id);
         startApprovalListener(docRef.id);
+        
+        // Trigger Telegram Push Notification to Admin
+        sendTelegramAlert(booking);
 
     } catch(e) {
         console.error("Booking Submission Error:", e);
@@ -447,6 +450,43 @@ async function submitBooking() {
 var currentBookingForReceipt = null;
 var currentBookingIdForReceipt = null;
 var historyListener = null;
+
+function sendTelegramAlert(booking) {
+    db.collection('settings').doc('admin').get().then((doc) => {
+        if (doc.exists) {
+            const data = doc.data();
+            const token = data.telegram_token;
+            const chatId = data.telegram_chat_id;
+            if (token && chatId) {
+                const text = `🏏 *NEW ONLINE BOOKING* 🚨\n\n` +
+                             `👤 *Name:* ${booking.nm}\n` +
+                             `📞 *Phone:* ${booking.ph}\n` +
+                             `📅 *Date:* ${booking.date}\n` +
+                             `⏰ *Time:* ${booking.st}\n` +
+                             `⏳ *Duration:* ${booking.hrs} Hours\n` +
+                             `💰 *Advance:* Rs. ${parseInt(booking.advAmt || 0).toLocaleString()}\n` +
+                             `💳 *TRID:* ${booking.trid || 'N/A'}`;
+                
+                const url = `https://api.telegram.org/bot${token}/sendMessage`;
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: text,
+                        parse_mode: 'Markdown'
+                    })
+                }).then(res => {
+                    console.log("Telegram alert sent:", res.status);
+                }).catch(err => {
+                    console.error("Telegram alert failed:", err);
+                });
+            }
+        }
+    }).catch(err => {
+        console.error("Failed to load settings for telegram:", err);
+    });
+}
 
 function startHistoryListener(ph) {
     if (!ph) return;
