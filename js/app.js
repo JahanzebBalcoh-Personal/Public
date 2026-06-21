@@ -462,8 +462,8 @@ function showApprovalNotification(data) {
         overlay.style.display = 'flex';
     }
     
-    // Also try browser notification
-    if (Notification.permission === "granted") {
+    // Also try browser notification (check exists first for iOS Safari)
+    if (typeof Notification !== 'undefined' && Notification.permission === "granted") {
         showNotification("Booking Approved! 🏏", {
             body: `Congratulations! Your booking for ${data.st} is confirmed.`,
             icon: "img/logo.png"
