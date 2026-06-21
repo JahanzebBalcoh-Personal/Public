@@ -321,17 +321,32 @@ body {
 </div>
 
 <!-- SUCCESS OVERLAY -->
-<div id="successOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:10000; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:30px; backdrop-filter:blur(10px);">
-    <div style="font-size:80px; margin-bottom:20px;">✅</div>
-    <h1 style="color:var(--gold); font-family:'Bebas Neue',sans-serif; font-size:32px; margin-bottom:10px;">BOOKING SENT FOR APPROVAL!</h1>
-    <p style="color:var(--text); margin-bottom:30px; font-size:14px; opacity:0.8;">Apki booking verify honay ke liye chali gayi hai. <br> Staff payment check karke jald hi confirm kar dega.</p>
+<div id="successOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:10000; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:30px; backdrop-filter:blur(10px); overflow-y:auto;">
+  <div style="max-width:400px; width:100%;">
+    <div style="font-size:80px; margin-bottom:15px;">🎊</div>
+    <h1 style="color:var(--gold); font-family:'Bebas Neue',sans-serif; font-size:32px; margin-bottom:10px;">CONGRATULATIONS!</h1>
+    <p id="successMsg" style="color:var(--text); margin-bottom:20px; font-size:14px; opacity:0.8;"></p>
     
-    <button onclick="triggerAlarm()" style="background:linear-gradient(135deg, #ef4444, #b91c1c); border:none; width:120px; height:120px; border-radius:50%; box-shadow:0 0 20px rgba(239,68,68,0.5); display:flex; align-items:center; justify-content:center; cursor:pointer; margin-bottom:20px; animation:badgePulse 1.5s infinite;">
-        <span style="font-size:50px;">🔔</span>
-    </button>
-    <div style="color:#ef4444; font-weight:900; letter-spacing:1px; font-size:12px;">TAP TO CALL STAFF</div>
+    <div id="successCard" style="background:var(--card); border:2px solid var(--border); border-radius:20px; padding:20px; margin-bottom:20px; text-align:left;">
+      <div style="font-size:11px; color:var(--muted); font-weight:800; letter-spacing:1px; margin-bottom:12px;">MATCH DETAILS:</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px; font-weight:800;">
+        <div><span style="color:var(--muted); font-size:10px;">📅 Date:</span><br><span id="sc-date"></span></div>
+        <div><span style="color:var(--muted); font-size:10px;">⏰ Time:</span><br><span id="sc-time"></span></div>
+        <div><span style="color:var(--muted); font-size:10px;">⏳ Duration:</span><br><span id="sc-hrs"></span></div>
+        <div><span style="color:var(--muted); font-size:10px;">💰 Advance:</span><br><span id="sc-adv" style="color:var(--green);"></span></div>
+      </div>
+      <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border); font-size:10px; color:var(--muted);">
+        REF: <span id="sc-ref" style="color:var(--gold); font-family:'JetBrains Mono',monospace; font-weight:800;"></span>
+      </div>
+    </div>
     
-    <button onclick="window.location.reload()" style="margin-top:40px; background:transparent; border:1px solid var(--border); color:var(--text); padding:10px 30px; border-radius:10px; font-size:12px; cursor:pointer;">Go Back to Slots</button>
+    <div style="display:flex; gap:10px; margin-bottom:15px;">
+      <button onclick="downloadReceipt()" style="flex:1; background:linear-gradient(135deg,var(--green),#15803d); color:#fff; border:none; border-radius:12px; padding:14px; font-family:'Nunito',sans-serif; font-size:13px; font-weight:900; cursor:pointer;">📥 SAVE RECEIPT</button>
+      <button onclick="triggerAlarm()" style="flex:1; background:linear-gradient(135deg,#ef4444,#b91c1c); color:#fff; border:none; border-radius:12px; padding:14px; font-family:'Nunito',sans-serif; font-size:13px; font-weight:900; cursor:pointer;">🔔 CALL STAFF</button>
+    </div>
+    
+    <button onclick="window.location.reload()" style="width:100%; background:transparent; border:1px solid var(--border); color:var(--text); padding:12px; border-radius:10px; font-size:12px; cursor:pointer; font-family:'Nunito',sans-serif; font-weight:800;">Go Back to Slots</button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>

@@ -412,7 +412,23 @@ async function submitBooking() {
         localStorage.setItem('lastBookingId', docRef.id);
         localStorage.setItem('lastBookingStatus', 'waiting_approval');
         
+        // Save to booking history (by phone number)
+        var histKey = 'scc_history_' + ph.replace(/\D/g,'');
+        var hist = JSON.parse(localStorage.getItem(histKey) || '[]');
+        hist.unshift({
+            id: docRef.id,
+            nm: nm, ph: ph, date: date,
+            st: selectedSlot, hrs: parseFloat(hrs),
+            advAmt: advAmt, totalAmt: parseFloat(hrs) * RATE,
+            status: 'waiting_approval',
+            createdAt: new Date().toISOString()
+        });
+        if (hist.length > 20) hist = hist.slice(0, 20); // max 20 bookings
+        localStorage.setItem(histKey, JSON.stringify(hist));
+        localStorage.setItem('scc_last_phone', ph.replace(/\D/g,''));
+        
         document.getElementById('successOverlay').style.display = 'flex';
+        showSuccessCard({nm:nm, ph:ph, date:date, st:selectedSlot, hrs:parseFloat(hrs), advAmt:advAmt}, docRef.id);
         startApprovalListener(docRef.id);
 
     } catch(e) {
@@ -548,4 +564,139 @@ window.addEventListener('load', () => {
             setTimeout(() => loader.style.display = 'none', 500);
         }
     }, 300);
+    
+    // Show my bookings if phone exists
+    renderMyBookings();
 });
+
+// Show success card with booking details
+function showSuccessCard(bookingData, bookingId) {
+    var overlay = document.getElementById('successOverlay');
+    var msg = document.getElementById('successMsg');
+    var scDate = document.getElementById('sc-date');
+    var scTime = document.getElementById('sc-time');
+    var scHrs = document.getElementById('sc-hrs');
+    var scAdv = document.getElementById('sc-adv');
+    var scRef = document.getElementById('sc-ref');
+    
+    if (msg) msg.innerHTML = 'Your booking for <b>' + bookingData.st + '</b> has been submitted!<br><small style="color:var(--muted)">Staff will verify your payment and confirm shortly.</small>';
+    if (scDate) scDate.textContent = bookingData.date;
+    if (scTime) scTime.textContent = bookingData.st;
+    if (scHrs) scHrs.textContent = bookingData.hrs + ' Hours';
+    if (scAdv) scAdv.textContent = 'Rs. ' + parseInt(bookingData.advAmt || 0).toLocaleString();
+    if (scRef) scRef.textContent = '#' + (bookingId || '').slice(-6).toUpperCase();
+    if (overlay) overlay.style.display = 'flex';
+}
+
+// Download receipt as image
+function downloadReceipt() {
+    var lastId = localStorage.getItem('lastBookingId') || '';
+    var ph = localStorage.getItem('scc_last_phone') || '';
+    var histKey = 'scc_history_' + ph;
+    var hist = JSON.parse(localStorage.getItem(histKey) || '[]');
+    var bk = hist[0] || {};
+    
+    var canvas = document.createElement('canvas');
+    canvas.width = 800; canvas.height = 500;
+    var ctx = canvas.getContext('2d');
+    
+    // Background
+    ctx.fillStyle = '#060e1a';
+    ctx.fillRect(0, 0, 800, 500);
+    
+    // Gold header bar
+    ctx.fillStyle = '#f0b429';
+    ctx.fillRect(0, 0, 800, 8);
+    
+    // Club name
+    ctx.fillStyle = '#f0b429';
+    ctx.font = 'bold 36px Arial';
+    ctx.fillText('SCC - SULTANS CRICKET CLUB', 40, 60);
+    
+    ctx.fillStyle = '#64748b';
+    ctx.font = '14px Arial';
+    ctx.fillText('Near Menssion Marriage Club, MA Jinnah Road, Multan', 40, 82);
+    
+    // Divider
+    ctx.strokeStyle = 'rgba(240,180,41,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(40, 100); ctx.lineTo(760, 100); ctx.stroke();
+    
+    // RECEIPT title
+    ctx.fillStyle = '#22c55e';
+    ctx.font = 'bold 20px Arial';
+    ctx.fillText('BOOKING RECEIPT', 40, 135);
+    
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px Arial';
+    ctx.fillText('REF: #' + lastId.slice(-6).toUpperCase(), 40, 155);
+    
+    // Details
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = 'bold 16px Arial';
+    var details = [
+        ['Name:', bk.nm || '-'],
+        ['Phone:', bk.ph || '-'],
+        ['Date:', bk.date || '-'],
+        ['Time:', bk.st || '-'],
+        ['Duration:', (bk.hrs || '-') + ' Hours'],
+        ['Advance Paid:', 'Rs. ' + parseInt(bk.advAmt || 0).toLocaleString()],
+        ['Total Amount:', 'Rs. ' + parseInt(bk.totalAmt || 0).toLocaleString()],
+        ['Status:', 'WAITING APPROVAL'],
+    ];
+    details.forEach(function(row, i) {
+        ctx.fillStyle = '#64748b';
+        ctx.fillText(row[0], 40, 200 + i * 32);
+        ctx.fillStyle = '#f1f5f9';
+        ctx.fillText(row[1], 250, 200 + i * 32);
+    });
+    
+    // Footer
+    ctx.strokeStyle = 'rgba(240,180,41,0.2)';
+    ctx.beginPath(); ctx.moveTo(40, 465); ctx.lineTo(760, 465); ctx.stroke();
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px Arial';
+    ctx.fillText('sultan.jahanzebbaloch.com | System by Jahanzeb Baloch', 40, 485);
+    ctx.fillText(new Date().toLocaleString(), 560, 485);
+    
+    // Download
+    var link = document.createElement('a');
+    link.download = 'SCC-Booking-' + lastId.slice(-6).toUpperCase() + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast('Receipt downloaded! 📥', 'ok');
+}
+
+// Render My Bookings section
+function renderMyBookings() {
+    var ph = localStorage.getItem('scc_last_phone') || '';
+    if (!ph) return;
+    var histKey = 'scc_history_' + ph;
+    var hist = JSON.parse(localStorage.getItem(histKey) || '[]');
+    if (!hist.length) return;
+    
+    // Create section if not exists
+    var section = document.getElementById('myBookingsSection');
+    if (!section) {
+        section = document.createElement('div');
+        section.id = 'myBookingsSection';
+        section.className = 'section booking-container';
+        section.style = 'padding-top:40px;';
+        var footer = document.querySelector('.footer');
+        if (footer) footer.parentNode.insertBefore(section, footer);
+    }
+    
+    section.innerHTML = '<h2 class="sh-t" style="margin-bottom:15px;">📋 My Booking History</h2>' +
+    '<p style="font-size:12px; color:var(--muted); margin-bottom:15px;">Your previous bookings on this device.</p>' +
+    hist.map(function(b) {
+        return '<div style="background:var(--card); border:1.5px solid var(--border); border-radius:14px; padding:15px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">' +
+            '<div>' +
+            '<div style="font-family:\'Bebas Neue\',sans-serif; font-size:20px; color:var(--text);">' + b.st + ' &mdash; ' + b.date + '</div>' +
+            '<div style="font-size:11px; color:var(--muted); font-weight:800;">' + b.hrs + ' HOURS &bull; Rs. ' + parseInt(b.totalAmt||0).toLocaleString() + ' TOTAL</div>' +
+            '<div style="font-size:10px; color:var(--muted); margin-top:4px;">REF: #' + b.id.slice(-6).toUpperCase() + '</div>' +
+            '</div>' +
+            '<div style="text-align:right;">' +
+            '<span style="background:rgba(240,180,41,0.1); color:var(--gold); font-size:9px; font-weight:900; padding:3px 10px; border-radius:20px; border:1px solid rgba(240,180,41,0.2);">' + (b.status||'pending').toUpperCase() + '</span>' +
+            '</div></div>';
+    }).join('');
+}
