@@ -168,30 +168,19 @@ function renderBookingsList() {
     }
 
     list.innerHTML = visibleBookings.map(b => {
-        const isApproved = b.status === 'pre' || b.status === 'approved' || b.status === 'paid' || b.status === 'partial';
-        const receiptBtn = isApproved
-            ? `<button onclick="downloadReceipt('${b.id}', ${JSON.stringify(b).replace(/"/g, '&quot;')})" style="margin-top:8px; background:linear-gradient(135deg,#22c55e,#15803d); color:#fff; border:none; border-radius:8px; padding:7px 14px; font-size:10px; font-weight:900; cursor:pointer; font-family:'Nunito',sans-serif; letter-spacing:0.5px;">📥 DOWNLOAD RECEIPT</button>`
-            : '';
+        // Public schedule: show time/name only, NO receipt download (privacy)
+        const isApproved = b.status === 'pre' || b.status === 'approved' || b.status === 'paid';
         return `
-        <div style="background:rgba(255,255,255,0.02); border:1.5px solid var(--border); border-radius:16px; padding:20px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:flex-start; transition:0.3s; border-left:5px solid ${getStatusColor(b.status)};">
+        <div style="background:rgba(255,255,255,0.02); border:1.5px solid var(--border); border-radius:16px; padding:18px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; border-left:5px solid ${getStatusColor(b.status)};">
             <div style="flex:1;">
                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
                     <span style="background:rgba(240,180,41,0.1); color:var(--gold); font-size:10px; font-weight:900; padding:2px 8px; border-radius:4px; border:1px solid rgba(240,180,41,0.2);">${b.date}</span>
-                    <div style="font-family:'Bebas Neue',sans-serif; font-size:24px; color:var(--text); letter-spacing:1px; line-height:1;">${b.st}</div>
+                    <div style="font-family:'Bebas Neue',sans-serif; font-size:22px; color:var(--text); letter-spacing:1px; line-height:1;">${b.st}</div>
                 </div>
-                <div style="font-size:11px; color:var(--muted); font-weight:800; margin-top:4px; text-transform:uppercase;">${b.hrs} HOURS MATCH</div>
-                <div style="margin-top:12px; display:flex; align-items:center; gap:10px;">
-                    <div style="width:30px; height:30px; background:var(--card2); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; border:1px solid var(--border);">🏏</div>
-                    <div>
-                        <div style="font-weight:900; font-size:15px; color:var(--gold);">${b.nm}</div>
-                        <div style="font-size:10px; color:var(--muted); font-weight:700;">PLAYER</div>
-                    </div>
-                </div>
+                <div style="font-size:11px; color:var(--muted); font-weight:800; margin-top:3px;">${b.hrs} HOURS &bull; ${b.nm}</div>
             </div>
             <div style="text-align:right;">
-                <div style="background:${getStatusColor(b.status)}; color:#000; padding:6px 15px; border-radius:30px; font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:1px; display:inline-block; margin-bottom:8px;">${getStatusLabel(b.status)}</div>
-                <div style="font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--muted); font-weight:700;">REF: #${b.id.slice(-6).toUpperCase()}</div>
-                ${receiptBtn}
+                <div style="background:${getStatusColor(b.status)}; color:#000; padding:5px 12px; border-radius:30px; font-size:10px; font-weight:900; display:inline-block;">${isApproved ? '✅ BOOKED' : '⏳ PENDING'}</div>
             </div>
         </div>`;
     }).join('');
@@ -768,12 +757,72 @@ function downloadReceipt(bookingId, bookingData) {
     ctx.fillText('sultan.jahanzebbaloch.com | System by Jahanzeb Baloch', 40, 485);
     ctx.fillText(new Date().toLocaleString(), 560, 485);
     
-    // Download
+    // Download receipt
     var link = document.createElement('a');
-    link.download = 'SCC-Booking-' + (lastId || '').slice(-6).toUpperCase() + '.png';
+    link.download = 'SCC-Receipt-' + (lastId || '').slice(-6).toUpperCase() + '.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
     toast('Receipt downloaded! 📥', 'ok');
+    
+    // WhatsApp share option
+    setTimeout(function() {
+        var shareText = encodeURIComponent(
+            '🏏 *Sultan Cricket Club - Booking Receipt*\n\n' +
+            '👤 Name: ' + (bk.nm || '-') + '\n' +
+            '📅 Date: ' + (bk.date || '-') + '\n' +
+            '⏰ Time: ' + (bk.st || '-') + '\n' +
+            '⏳ Hours: ' + (bk.hrs || '-') + ' Hrs\n' +
+            '💰 Total: Rs. ' + parseInt(bk.totalAmt || 0).toLocaleString() + '\n' +
+            '✅ Status: ' + (isApproved ? 'CONFIRMED / APPROVED' : 'WAITING APPROVAL') + '\n' +
+            '📌 REF: #' + (lastId || '').slice(-6).toUpperCase() + '\n\n' +
+            'sultan.jahanzebbaloch.com'
+        );
+        if (confirm('📲 Receipt download ho gayi! WhatsApp pe bhi share karein?')) {
+            window.open('https://wa.me/?text=' + shareText, '_blank');
+        }
+    }, 800);
+}
+
+// ─── MY BOOKINGS SECTION ───
+function showMyBookingsPrompt() {
+    var section = document.getElementById('myBookingsSection');
+    if (!section) return;
+    var savedPh = localStorage.getItem('scc_last_phone') || '';
+    if (savedPh) {
+        // Already have phone, load directly
+        startHistoryListener(savedPh);
+        section.scrollIntoView({ behavior: 'smooth' });
+        return;
+    }
+    // Show phone entry prompt
+    section.style.display = 'block';
+    section.innerHTML = `
+    <h2 class="sh-t" style="margin-bottom:15px;">📋 My Booking History</h2>
+    <div style="background:var(--card); border:1.5px solid var(--border); border-radius:16px; padding:24px; text-align:center;">
+        <div style="font-size:40px; margin-bottom:12px;">📱</div>
+        <div style="font-weight:900; font-size:16px; margin-bottom:8px; color:var(--text);">Apna Phone Number Daalo</div>
+        <div style="font-size:12px; color:var(--muted); margin-bottom:20px;">Booking karte waqt jo number diya tha wahi daalo</div>
+        <div style="display:flex; gap:10px; max-width:340px; margin:0 auto;">
+            <input type="tel" id="historyPhoneInp" placeholder="03XXXXXXXXX" maxlength="11"
+                style="flex:1; background:var(--card2); border:1.5px solid var(--border); border-radius:10px; padding:12px 14px; font-size:15px; font-weight:700; color:var(--text); outline:none; text-align:center; font-family:'Nunito',sans-serif;"
+                onkeydown="if(event.key==='Enter') lookupMyBookings()">
+            <button onclick="lookupMyBookings()" style="background:var(--gold); color:#000; border:none; border-radius:10px; padding:12px 18px; font-weight:900; font-size:13px; cursor:pointer; white-space:nowrap;">DEKHO 🔎</button>
+        </div>
+        <div id="historyPhoneErr" style="font-size:12px; color:var(--red); margin-top:10px; font-weight:700;"></div>
+    </div>`;
+    section.scrollIntoView({ behavior: 'smooth' });
+}
+
+function lookupMyBookings() {
+    var inp = document.getElementById('historyPhoneInp');
+    var err = document.getElementById('historyPhoneErr');
+    if (!inp) return;
+    var ph = inp.value.trim().replace(/\D/g, '');
+    if (ph.length < 10) { if(err) err.textContent = '❌ Valid phone number daalo (e.g. 03001234567)'; return; }
+    if (ph.startsWith('3') && ph.length === 10) ph = '0' + ph;
+    localStorage.setItem('scc_last_phone', ph);
+    if (err) err.textContent = '';
+    startHistoryListener(ph);
 }
 
 // Render My Bookings section
@@ -781,7 +830,6 @@ function renderMyBookings(liveBookings) {
     var ph = localStorage.getItem('scc_last_phone') || '';
     if (!ph) return;
     
-    // Create section if not exists
     var section = document.getElementById('myBookingsSection');
     if (!section) {
         section = document.createElement('div');
@@ -793,36 +841,50 @@ function renderMyBookings(liveBookings) {
     }
     
     if (!liveBookings || !liveBookings.length) {
-        section.style.display = 'none';
+        section.style.display = 'block';
+        section.innerHTML = `
+        <h2 class="sh-t" style="margin-bottom:15px;">📋 My Booking History</h2>
+        <div style="background:var(--card); border:1.5px solid var(--border); border-radius:16px; padding:30px; text-align:center;">
+            <div style="font-size:40px; margin-bottom:10px;">🏏</div>
+            <div style="font-size:14px; color:var(--muted); font-weight:700;">Koi booking nahi mili <b>${ph}</b> ke liye</div>
+            <button onclick="localStorage.removeItem('scc_last_phone'); showMyBookingsPrompt()" style="margin-top:15px; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:8px 16px; font-size:11px; cursor:pointer;">Doosra number try karo</button>
+        </div>`;
         return;
     }
     section.style.display = 'block';
     
-    // Generate innerHTML
     var itemsHTML = liveBookings.map(function(b) {
-        var statusLabel = (b.status || 'pending').toUpperCase();
-        if (b.status === 'waiting_approval') statusLabel = 'WAITING APPROVAL';
-        if (b.status === 'pre') statusLabel = 'APPROVED';
-        
-        var statusColor = 'var(--gold)';
-        if (b.status === 'approved' || b.status === 'pre' || b.status === 'paid') statusColor = 'var(--green)';
-        if (b.status === 'rejected' || b.status === 'cancelled') statusColor = 'var(--red)';
+        var isApproved = b.status === 'pre' || b.status === 'approved' || b.status === 'paid' || b.status === 'partial';
+        var statusLabel = '⏳ Waiting';
+        var statusColor = '#f0b429';
+        if (b.status === 'pre' || b.status === 'approved') { statusLabel = '✅ Confirmed'; statusColor = '#22c55e'; }
+        if (b.status === 'paid') { statusLabel = '💵 Paid'; statusColor = '#22c55e'; }
+        if (b.status === 'partial') { statusLabel = '🟡 Partial'; statusColor = '#3b82f6'; }
+        if (b.status === 'rejected' || b.status === 'cancelled') { statusLabel = '❌ Cancelled'; statusColor = '#ef4444'; }
         
         const safeData = JSON.stringify(b).replace(/"/g, '&quot;');
+        var receiptBtn = isApproved
+            ? '<button onclick="downloadReceipt(\'' + b.id + '\', ' + safeData + ')" style="background:linear-gradient(135deg,#22c55e,#15803d); color:#fff; border:none; padding:7px 14px; font-size:10px; font-weight:900; border-radius:8px; cursor:pointer; margin-top:6px; width:100%;">📥 RECEIPT + SHARE</button>'
+            : '<div style="font-size:10px; color:var(--muted); margin-top:6px; font-weight:700;">Receipt after approval</div>';
         
-        return '<div style="background:var(--card); border:1.5px solid var(--border); border-radius:14px; padding:15px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">' +
-            '<div>' +
-            '<div style="font-family:\'Bebas Neue\',sans-serif; font-size:20px; color:var(--text);">' + b.st + ' &mdash; ' + b.date + '</div>' +
-            '<div style="font-size:11px; color:var(--muted); font-weight:800;">' + b.hrs + ' HOURS &bull; Rs. ' + parseInt(b.totalAmt||b.fin||0).toLocaleString() + ' TOTAL</div>' +
-            '<div style="font-size:10px; color:var(--muted); margin-top:4px;">REF: #' + b.id.slice(-6).toUpperCase() + '</div>' +
-            '</div>' +
-            '<div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:8px;">' +
-            '<span style="background:rgba(255,255,255,0.02); color:' + statusColor + '; font-size:9px; font-weight:900; padding:3px 10px; border-radius:20px; border:1px solid ' + statusColor + ';">' + statusLabel + '</span>' +
-            '<button onclick="downloadReceipt(\'' + b.id + '\', ' + safeData + ')" style="background:linear-gradient(135deg,var(--green),#15803d); color:#fff; border:none; padding:5px 12px; font-size:10px; font-weight:900; border-radius:8px; cursor:pointer;">📥 RECEIPT</button>' +
+        return '<div style="background:var(--card); border:1.5px solid var(--border); border-left:4px solid ' + statusColor + '; border-radius:14px; padding:16px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:flex-start;">'+
+            '<div style="flex:1;">'+
+            '<div style="font-family:\'Bebas Neue\',sans-serif; font-size:20px; color:var(--text); line-height:1.1;">' + b.st + '</div>'+
+            '<div style="font-size:11px; color:var(--gold); font-weight:800; margin-top:2px;">' + b.date + ' &bull; ' + b.hrs + ' Hrs</div>'+
+            '<div style="font-size:10px; color:var(--muted); margin-top:3px;">Rs. ' + parseInt(b.totalAmt||b.fin||0).toLocaleString() + ' Total &bull; Rs. ' + parseInt(b.advAmt||0).toLocaleString() + ' Paid</div>'+
+            '<div style="font-size:9px; color:var(--muted); margin-top:2px; font-family:\'JetBrains Mono\',monospace;">REF: #' + b.id.slice(-6).toUpperCase() + '</div>'+
+            '</div>'+
+            '<div style="text-align:right; min-width:110px;">'+
+            '<span style="background:rgba(255,255,255,0.04); color:' + statusColor + '; font-size:10px; font-weight:900; padding:4px 10px; border-radius:20px; border:1px solid ' + statusColor + '; white-space:nowrap;">' + statusLabel + '</span>'+
+            receiptBtn +
             '</div></div>';
     }).join('');
     
-    section.innerHTML = '<h2 class="sh-t" style="margin-bottom:15px;">📋 My Booking History</h2>' +
-    '<p style="font-size:12px; color:var(--muted); margin-bottom:15px;">Your bookings linked to this phone number: <b>' + ph + '</b></p>' +
-    '<div style="max-height:400px; overflow-y:auto; padding-right:5px;">' + itemsHTML + '</div>';
+    section.innerHTML = 
+        '<h2 class="sh-t" style="margin-bottom:6px;">📋 My Booking History</h2>' +
+        '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">'+
+        '<p style="font-size:12px; color:var(--muted); margin:0;">📱 ' + ph + '</p>'+
+        '<button onclick="localStorage.removeItem(\'scc_last_phone\'); historyListener=null; showMyBookingsPrompt()" style="background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:10px; cursor:pointer;">🔄 Change</button>'+
+        '</div>'+
+        '<div style="max-height:420px; overflow-y:auto; padding-right:4px;">' + itemsHTML + '</div>';
 }
