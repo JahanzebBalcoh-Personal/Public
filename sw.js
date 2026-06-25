@@ -23,14 +23,33 @@ messaging.onBackgroundMessage((payload) => {
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
+const CACHE_NAME = 'scc-public-v2';
+const urlsToCache = [
+  './index.html',
+  './manifest.json',
+  './img/logo.png'
+];
+
 self.addEventListener('install', function(e) {
+  e.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(function(cache) {
+        return cache.addAll(urlsToCache);
+      })
+  );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', function(e) {
   e.waitUntil(
     caches.keys().then(function(names) {
-      return Promise.all(names.map(function(name) { return caches.delete(name); }));
+      return Promise.all(
+        names.map(function(name) {
+          if (name !== CACHE_NAME) {
+            return caches.delete(name);
+          }
+        })
+      );
     }).then(function() {
       return self.clients.claim();
     })
@@ -38,5 +57,10 @@ self.addEventListener('activate', function(e) {
 });
 
 self.addEventListener('fetch', function(e) {
-  e.respondWith(fetch(e.request));
+  // Network-First Strategy
+  e.respondWith(
+    fetch(e.request).catch(function() {
+      return caches.match(e.request);
+    })
+  );
 });

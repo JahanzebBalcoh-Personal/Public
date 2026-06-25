@@ -112,6 +112,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+// PWA Install Logic
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent Chrome 67 and earlier from automatically showing the prompt
+    e.preventDefault();
+    // Stash the event so it can be triggered later.
+    deferredPrompt = e;
+    // Update UI to notify the user they can add to home screen
+    const installBtn = document.getElementById('installPwaBtn');
+    if(installBtn) {
+        installBtn.style.display = 'inline-block';
+        installBtn.addEventListener('click', () => {
+            // hide our user interface that shows our A2HS button
+            installBtn.style.display = 'none';
+            // Show the prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the PWA prompt');
+                } else {
+                    console.log('User dismissed the PWA prompt');
+                    installBtn.style.display = 'inline-block'; // Show it again
+                }
+                deferredPrompt = null;
+            });
+        });
+    }
+});
+
 async function fetchSettings() {
     const doc = await db.collection('settings').doc('admin').get();
     if(doc.exists) {
