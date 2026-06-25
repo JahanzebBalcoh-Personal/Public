@@ -4,7 +4,7 @@ const db = firebase.firestore();
 const storage = firebase.storage();
 var messaging = null;
 try {
-    if (firebase.messaging.isSupported()) {
+    if (firebase.messaging && typeof firebase.messaging.isSupported === 'function' && firebase.messaging.isSupported()) {
         messaging = firebase.messaging();
     }
 } catch (e) { console.warn("Messaging not supported:", e); }
@@ -167,8 +167,13 @@ function renderBookingsList() {
         return;
     }
 
-    list.innerHTML = visibleBookings.map(b => `
-        <div style="background:rgba(255,255,255,0.02); border:1.5px solid var(--border); border-radius:16px; padding:20px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; transition:0.3s; border-left:5px solid ${getStatusColor(b.status)};">
+    list.innerHTML = visibleBookings.map(b => {
+        const isApproved = b.status === 'pre' || b.status === 'approved' || b.status === 'paid' || b.status === 'partial';
+        const receiptBtn = isApproved
+            ? `<button onclick="downloadReceipt('${b.id}', ${JSON.stringify(b).replace(/"/g, '&quot;')})" style="margin-top:8px; background:linear-gradient(135deg,#22c55e,#15803d); color:#fff; border:none; border-radius:8px; padding:7px 14px; font-size:10px; font-weight:900; cursor:pointer; font-family:'Nunito',sans-serif; letter-spacing:0.5px;">📥 DOWNLOAD RECEIPT</button>`
+            : '';
+        return `
+        <div style="background:rgba(255,255,255,0.02); border:1.5px solid var(--border); border-radius:16px; padding:20px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:flex-start; transition:0.3s; border-left:5px solid ${getStatusColor(b.status)};">
             <div style="flex:1;">
                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
                     <span style="background:rgba(240,180,41,0.1); color:var(--gold); font-size:10px; font-weight:900; padding:2px 8px; border-radius:4px; border:1px solid rgba(240,180,41,0.2);">${b.date}</span>
@@ -184,15 +189,28 @@ function renderBookingsList() {
                 </div>
             </div>
             <div style="text-align:right;">
-                <div style="background:${getStatusColor(b.status)}; color:#000; padding:6px 15px; border-radius:30px; font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:1px; display:inline-block; margin-bottom:8px;">${b.status === 'waiting_approval' ? 'WAITING VERIFICATION' : b.status.toUpperCase()}</div>
+                <div style="background:${getStatusColor(b.status)}; color:#000; padding:6px 15px; border-radius:30px; font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:1px; display:inline-block; margin-bottom:8px;">${getStatusLabel(b.status)}</div>
                 <div style="font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--muted); font-weight:700;">REF: #${b.id.slice(-6).toUpperCase()}</div>
+                ${receiptBtn}
             </div>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
+}
+
+function getStatusLabel(s) {
+    if (s === 'pre') return '✅ CONFIRMED';
+    if (s === 'approved') return '✅ APPROVED';
+    if (s === 'paid') return '💚 PAID';
+    if (s === 'partial') return '🟡 PARTIAL PAID';
+    if (s === 'waiting_approval' || s === 'pending') return '⏳ WAITING VERIFICATION';
+    if (s === 'rejected') return '❌ REJECTED';
+    if (s === 'cancelled') return '🚫 CANCELLED';
+    return (s || 'UNKNOWN').toUpperCase();
 }
 
 function getStatusColor(s) {
-    if (s === 'approved' || s === 'pre') return '#22c55e'; // Green
+    if (s === 'approved' || s === 'pre' || s === 'paid') return '#22c55e'; // Green
+    if (s === 'partial') return '#3b82f6'; // Blue
     if (s === 'waiting_approval' || s === 'pending') return '#f0b429'; // Gold
     return '#ef4444'; // Red
 }
